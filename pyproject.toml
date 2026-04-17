@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gvd"
+version = "0.1.0"
+description = "Git Vulnerabilities Detector"
+authors = [{name = "GVD Team"}]
+dependencies = ["rich"]
+readme = "README.md"
+
+[project.scripts]
+gvd = "gvd.cli:main"

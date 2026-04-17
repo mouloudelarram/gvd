@@ -1,0 +1,20 @@
+# Development dependencies for GVD
+-r pyproject.toml
+
+# Testing
+pytest>=7.0.0
+pytest-cov>=4.0.0
+
+# Code quality
+black>=22.0.0
+flake8>=5.0.0
+mypy>=1.0.0
+
+# Documentation
+mkdocs>=1.4.0
+mkdocs-material>=9.0.0
+
+# Build
+pyinstaller>=5.0.0
+build>=0.10.0
+twine>=4.0.0
