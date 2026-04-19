@@ -1,10 +1,10 @@
 import os
 
-from flask import Flask, redirect, render_template, request, session, url_for
+from flask import Flask, jsonify, redirect, render_template, request, session, url_for
 
 from auth import get_github_auth_url, get_github_token, get_github_user
 from clone import clone_repos
-from github import get_repos
+from github import get_repo_details, get_repos
 
 
 def load_env():
@@ -69,6 +69,14 @@ def clone():
     clone_repos(repos, token)
     session["message"] = f"Processed {len(repos)} repos."
     return redirect(url_for("dashboard"))
+
+
+@app.route("/repo-details/<owner>/<repo_name>")
+def repo_details(owner, repo_name):
+    token = session.get("access_token")
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+    return jsonify(get_repo_details(token, owner, repo_name))
 
 
 @app.route("/logout")

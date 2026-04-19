@@ -23,6 +23,10 @@ body {
   color: var(--text);
 }
 
+body.modal-open {
+  overflow: hidden;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -257,9 +261,12 @@ a {
 }
 
 .repo-card__details {
+  border: 0;
+  background: transparent;
   color: var(--text-secondary);
   font-size: 14px;
   font-weight: 600;
+  padding: 0;
 }
 
 .button {
@@ -295,6 +302,122 @@ a {
   margin-top: 32px;
   display: flex;
   justify-content: center;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.modal[hidden] {
+  display: none;
+}
+
+.modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(17, 24, 39, 0.18);
+}
+
+.modal__panel {
+  position: relative;
+  z-index: 1;
+  width: min(960px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--background);
+}
+
+.modal__header,
+.modal__section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.modal__header {
+  margin-bottom: 20px;
+}
+
+.modal__eyebrow {
+  margin: 0 0 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.modal__header h2,
+.modal__section h3 {
+  margin: 0;
+}
+
+.modal__close {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.modal__meta {
+  margin-bottom: 24px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.modal__meta-item {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.modal__section {
+  margin-top: 24px;
+}
+
+.modal__section p {
+  margin: 12px 0 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.modal__section-header {
+  margin-bottom: 12px;
+}
+
+.modal__readme {
+  margin: 0;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card);
+  color: var(--text);
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .login-page {
@@ -360,6 +483,11 @@ a {
   .topbar__actions {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .modal__header,
+  .modal__section-header {
+    flex-direction: column;
   }
 }
 
