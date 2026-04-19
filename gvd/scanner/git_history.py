@@ -17,7 +17,8 @@ class GitHistoryScanner:
             cwd=repo_path,
             capture_output=True,
             text=True,
-            check=True
+            check=True,
+            errors="replace"
         )
         
         current_commit = None

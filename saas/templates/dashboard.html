@@ -7,20 +7,28 @@
 <body>
   <h1>Dashboard</h1>
   <p>User: {{ user.name or user.login }}</p>
+  {% if message %}
+  <p>{{ message }}</p>
+  {% endif %}
   <p><a href="{{ url_for('logout') }}">Logout</a></p>
+  <form method="post" action="{{ url_for('clone') }}">
   <table border="1" cellpadding="6" cellspacing="0">
     <tr>
+      <th>Select</th>
       <th>Name</th>
       <th>Visibility</th>
       <th>Description</th>
     </tr>
     {% for repo in repos %}
     <tr>
+      <td><input type="checkbox" name="repo_urls" value="{{ repo.clone_url }}"></td>
       <td>{{ repo.name }}</td>
       <td>{{ repo.visibility }}</td>
       <td>{{ repo.description }}</td>
     </tr>
     {% endfor %}
   </table>
+  <p><button type="submit">Clone selected repos</button></p>
+  </form>
 </body>
 </html>

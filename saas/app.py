@@ -1,8 +1,9 @@
 import os
 
-from flask import Flask, redirect, render_template, session, url_for
+from flask import Flask, redirect, render_template, request, session, url_for
 
 from auth import get_github_auth_url, get_github_token, get_github_user
+from clone import clone_repos
 from github import get_repos
 
 
@@ -54,7 +55,20 @@ def dashboard():
         "dashboard.html",
         user=session.get("user"),
         repos=get_repos(token),
+        message=session.pop("message", None),
     )
+
+
+@app.route("/clone", methods=["POST"])
+def clone():
+    token = session.get("access_token")
+    if not token:
+        return redirect(url_for("index"))
+    selected_urls = set(request.form.getlist("repo_urls"))
+    repos = [repo for repo in get_repos(token) if repo.get("clone_url") in selected_urls]
+    clone_repos(repos, token)
+    session["message"] = f"Processed {len(repos)} repos."
+    return redirect(url_for("dashboard"))
 
 
 @app.route("/logout")

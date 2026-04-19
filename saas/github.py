@@ -18,6 +18,8 @@ def get_repos(token):
             "name": repo.get("name"),
             "visibility": "private" if repo.get("private") else "public",
             "description": repo.get("description") or "",
+            "clone_url": repo.get("clone_url"),
+            "owner": {"login": (repo.get("owner") or {}).get("login", "")},
         }
         for repo in repos
     ]
