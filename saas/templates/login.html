@@ -2,10 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GVD Login</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
-  <h1>GitHub Repo Dashboard</h1>
-  <p><a href="{{ login_url }}">Login with GitHub</a></p>
+<body class="login-page">
+  <main class="login-layout">
+    <section class="login-card">
+      <div class="brand brand--stacked">
+        <div class="brand__logo" aria-hidden="true">G</div>
+        <div class="brand__name">GVD</div>
+      </div>
+
+      <div class="login-copy">
+        <h1>GitHub visibility dashboard</h1>
+        <p>Connect your GitHub account to review repositories and launch scans from one simple workspace.</p>
+      </div>
+
+      <a class="button button--primary button--full" href="{{ login_url }}">Login with GitHub</a>
+    </section>
+  </main>
 </body>
 </html>

@@ -2,33 +2,87 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GVD Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
-  <h1>Dashboard</h1>
-  <p>User: {{ user.name or user.login }}</p>
-  {% if message %}
-  <p>{{ message }}</p>
-  {% endif %}
-  <p><a href="{{ url_for('logout') }}">Logout</a></p>
-  <form method="post" action="{{ url_for('clone') }}">
-  <table border="1" cellpadding="6" cellspacing="0">
-    <tr>
-      <th>Select</th>
-      <th>Name</th>
-      <th>Visibility</th>
-      <th>Description</th>
-    </tr>
-    {% for repo in repos %}
-    <tr>
-      <td><input type="checkbox" name="repo_urls" value="{{ repo.clone_url }}"></td>
-      <td>{{ repo.name }}</td>
-      <td>{{ repo.visibility }}</td>
-      <td>{{ repo.description }}</td>
-    </tr>
-    {% endfor %}
-  </table>
-  <p><button type="submit">Clone selected repos</button></p>
-  </form>
+<body class="app-shell">
+  {% set visible_count = request.args.get('limit', 15) | int %}
+  {% set displayed_repos = repos[:visible_count] %}
+
+  <header class="topbar">
+    <div class="topbar__inner">
+      <div class="brand">
+        <div class="brand__logo" aria-hidden="true">G</div>
+        <div class="brand__name">GVD</div>
+      </div>
+
+      <div class="topbar__actions">
+        <span class="topbar__user">{{ user.name or user.login }}</span>
+        <a class="button button--secondary" href="{{ url_for('logout') }}">Logout</a>
+      </div>
+    </div>
+  </header>
+
+  <main class="page">
+    <section class="page-header">
+      <div>
+        <h1>Repositories</h1>
+        <p>Monitor and scan your GitHub repositories from one clean workspace.</p>
+      </div>
+      <div class="page-header__meta">
+        <span class="repo-count">{{ repos|length }} total</span>
+      </div>
+    </section>
+
+    {% if message %}
+    <div class="notice">{{ message }}</div>
+    {% endif %}
+
+    {% if displayed_repos %}
+    <section class="repo-grid" aria-label="Repository list">
+      {% for repo in displayed_repos %}
+      <article class="repo-card">
+        <a
+          class="repo-card__overlay"
+          href="{{ repo.html_url or '#' }}"
+          aria-label="Open details for {{ repo.name }}"
+        ></a>
+
+        <div class="repo-card__header">
+          <h2 class="repo-card__title">
+            <a href="{{ repo.html_url or '#' }}">{{ repo.name }}</a>
+          </h2>
+          <span class="repo-card__visibility">{{ repo.visibility }}</span>
+        </div>
+
+        <p class="repo-card__description">
+          {{ repo.description or "No description provided." }}
+        </p>
+
+        <div class="repo-card__footer">
+          <a class="repo-card__details" href="{{ repo.html_url or '#' }}">Details</a>
+
+          <form method="post" action="{{ url_for('clone') }}">
+            <input type="hidden" name="repo_urls" value="{{ repo.clone_url }}">
+            <button class="button button--primary" type="submit">Scan</button>
+          </form>
+        </div>
+      </article>
+      {% endfor %}
+    </section>
+    {% else %}
+    <section class="empty-state">
+      <h2>No repositories found</h2>
+      <p>Your connected GitHub account does not have any repositories to display yet.</p>
+    </section>
+    {% endif %}
+
+    {% if repos|length > visible_count %}
+    <div class="pagination">
+      <a class="button button--secondary" href="{{ url_for('dashboard', limit=visible_count + 15) }}">See more</a>
+    </div>
+    {% endif %}
+  </main>
 </body>
 </html>
