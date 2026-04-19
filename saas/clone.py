@@ -1,3 +1,4 @@
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -41,3 +42,30 @@ def clone_repos(repos, token):
             print(f"failed to clone {username}/{name}")
             if e.stderr:
                 print(e.stderr.strip().replace(token, "[redacted]"))
+
+
+def ensure_repo_cloned(repo, token):
+    name = (repo.get("name") or "").strip()
+    clone_url = repo.get("clone_url") or ""
+    username = ((repo.get("owner") or {}).get("login") or "").strip()
+    if not name or not clone_url or not username:
+        raise ValueError("Invalid repo data.")
+
+    REPOS_DIR.mkdir(exist_ok=True)
+    user_dir = REPOS_DIR / Path(username).name
+    user_dir.mkdir(exist_ok=True)
+    target_dir = user_dir / Path(name).name
+
+    if target_dir.exists():
+        git_dir = target_dir / ".git"
+        if git_dir.exists():
+            return target_dir
+        shutil.rmtree(target_dir)
+
+    subprocess.run(
+        ["git", "clone", "--depth", "1", build_clone_url(clone_url, token), str(target_dir)],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return target_dir

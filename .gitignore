@@ -133,3 +133,4 @@ gvd-report/
 #saas 
 /saas/.env/
 /saas/repos/
+/saas/scan_reports/
