@@ -129,3 +129,6 @@ Thumbs.db
 # Project specific
 gvd-report/
 *.exe
+
+#saas 
+/saas/.env/

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Dashboard</title>
+</head>
+<body>
+  <h1>Dashboard</h1>
+  <p>User: {{ user.name or user.login }}</p>
+  <p><a href="{{ url_for('logout') }}">Logout</a></p>
+  <table border="1" cellpadding="6" cellspacing="0">
+    <tr>
+      <th>Name</th>
+      <th>Visibility</th>
+      <th>Description</th>
+    </tr>
+    {% for repo in repos %}
+    <tr>
+      <td>{{ repo.name }}</td>
+      <td>{{ repo.visibility }}</td>
+      <td>{{ repo.description }}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</body>
+</html>
