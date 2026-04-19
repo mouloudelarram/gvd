@@ -1,7 +1,7 @@
 from typing import List
 from pathlib import Path
 import json
-from gvd.core.models import Finding
+from cli.core.models import Finding
 
 class ReportBuilder:
     def __init__(self, findings: List[Finding]):

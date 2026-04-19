@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from gvd.report.builder import ReportBuilder
+from cli.report.builder import ReportBuilder
 
 class ReportExporter:
     def __init__(self, builder: ReportBuilder, output_dir: Path):

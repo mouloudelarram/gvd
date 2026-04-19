@@ -1,4 +1,4 @@
-from gvd.core.models import Finding, Severity
+from cli.core.models import Finding, Severity
 
 class RiskEngine:
     @staticmethod

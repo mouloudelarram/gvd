@@ -1,8 +1,8 @@
 import re
 from pathlib import Path
 from typing import List, Set
-from gvd.core.git_utils import run_git_command
-from gvd.core.models import Severity, Finding
+from cli.core.git_utils import run_git_command
+from cli.core.models import Severity, Finding
 
 class FileScanner:
     def __init__(self):

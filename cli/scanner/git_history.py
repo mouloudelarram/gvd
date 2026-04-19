@@ -2,8 +2,8 @@ import subprocess
 import re
 from pathlib import Path
 from typing import List, Generator
-from gvd.core.models import Finding
-from gvd.scanner.pattern_engine import PatternEngine
+from cli.core.models import Finding
+from cli.scanner.pattern_engine import PatternEngine
 
 class GitHistoryScanner:
     def __init__(self, pattern_engine: PatternEngine):

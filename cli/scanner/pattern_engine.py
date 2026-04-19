@@ -1,6 +1,6 @@
 import re
 from typing import List, Dict, Pattern
-from gvd.core.models import Severity
+from cli.core.models import Severity
 
 class PatternEngine:
     def __init__(self):

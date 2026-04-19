@@ -4,14 +4,14 @@ from pathlib import Path
 from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress
-from gvd.core.git_utils import is_git_repo, get_repo_root, get_repo_name
-from gvd.scanner.pattern_engine import PatternEngine
-from gvd.scanner.git_history import GitHistoryScanner
-from gvd.scanner.file_scanner import FileScanner
-from gvd.scanner.risk_engine import RiskEngine
-from gvd.report.builder import ReportBuilder
-from gvd.report.exporter import ReportExporter
-from gvd.utils.logger import setup_logger
+from cli.core.git_utils import is_git_repo, get_repo_root, get_repo_name
+from cli.scanner.pattern_engine import PatternEngine
+from cli.scanner.git_history import GitHistoryScanner
+from cli.scanner.file_scanner import FileScanner
+from cli.scanner.risk_engine import RiskEngine
+from cli.report.builder import ReportBuilder
+from cli.report.exporter import ReportExporter
+from cli.utils.logger import setup_logger
 
 logger = setup_logger()
 console = Console()
