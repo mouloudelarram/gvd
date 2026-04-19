@@ -4,18 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>GVD Login</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body class="login-page">
   <main class="login-layout">
     <section class="login-card">
       <div class="brand brand--stacked">
-        <div class="brand__logo" aria-hidden="true">G</div>
-        <div class="brand__name">GVD</div>
+        <img class="brand__logo-image brand__logo-image-login" src="{{ url_for('static', filename='images/logo.png') }}" alt="GVD logo">
+        <div class="brand__name"></div>
       </div>
 
       <div class="login-copy">
-        <h1>GitHub visibility dashboard</h1>
+        <h1>GitHub vulnerability detector</h1>
         <p>Connect your GitHub account to review repositories and launch scans from one simple workspace.</p>
       </div>
 

@@ -5,6 +5,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent
 REPOS_DIR = BASE_DIR / "repos"
+WINDOWS_CREATION_FLAGS = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
 
 
 def build_clone_url(clone_url, token):
@@ -44,7 +45,7 @@ def clone_repos(repos, token):
                 print(e.stderr.strip().replace(token, "[redacted]"))
 
 
-def ensure_repo_cloned(repo, token):
+def ensure_repo_cloned(repo, token, process_callback=None):
     name = (repo.get("name") or "").strip()
     clone_url = repo.get("clone_url") or ""
     username = ((repo.get("owner") or {}).get("login") or "").strip()
@@ -62,10 +63,21 @@ def ensure_repo_cloned(repo, token):
             return target_dir
         shutil.rmtree(target_dir)
 
-    subprocess.run(
+    process = subprocess.Popen(
         ["git", "clone", "--depth", "1", build_clone_url(clone_url, token), str(target_dir)],
-        check=True,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         text=True,
+        creationflags=WINDOWS_CREATION_FLAGS,
     )
+    if process_callback:
+        process_callback(process)
+    stdout, stderr = process.communicate()
+    if process.returncode != 0:
+        raise subprocess.CalledProcessError(
+            process.returncode,
+            process.args,
+            output=stdout,
+            stderr=stderr,
+        )
     return target_dir
