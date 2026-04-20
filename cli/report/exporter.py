@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 from cli.report.builder import ReportBuilder
+from cli.report.pdf_builder import build_pdf_report
 
 class ReportExporter:
     def __init__(self, builder: ReportBuilder, output_dir: Path):
@@ -24,3 +25,7 @@ class ReportExporter:
         summary = self.builder.build_summary_text()
         with open(self.output_dir / "summary.txt", "w") as f:
             f.write(summary)
+        
+        # PDF Report
+        pdf_path = self.output_dir / "report.pdf"
+        build_pdf_report(self.builder.findings, pdf_path)

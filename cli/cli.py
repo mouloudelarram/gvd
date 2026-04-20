@@ -1,6 +1,10 @@
 import argparse
 import sys
 from pathlib import Path
+
+# Add parent directory to path to allow absolute imports when run directly
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress

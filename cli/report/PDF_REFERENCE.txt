@@ -1,0 +1,250 @@
+"""
+Quick reference for the new PDF report structure and design.
+
+This file documents what the generated PDF looks like.
+"""
+
+"""
+═══════════════════════════════════════════════════════════════════════════════
+                        PDF REPORT STRUCTURE
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                               │
+│  GVD Security Report                                                         │
+│  Generated on April 20, 2026 at 3:45 PM • 5 repositories scanned            │
+│                                                                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│  SECURITY SUMMARY                                                            │
+│                                                                               │
+│  ┌─────────────────────────────────────────────────────────────────┐         │
+│  │ Metric                      │ Count                             │         │
+│  ├─────────────────────────────┼───────────────────────────────────┤         │
+│  │ Repositories Scanned        │ 5                                 │         │
+│  │ Total Findings              │ 12                                │         │
+│  │ 🔴 Critical                │ 2                                 │         │
+│  │ 🟠 High                    │ 4                                 │         │
+│  │ 🟡 Medium                  │ 4                                 │         │
+│  │ 🟢 Low                     │ 2                                 │         │
+│  └─────────────────────────────────────────────────────────────────┘         │
+│                                                                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│  📁 BACKEND-API                                                              │
+│                                                                               │
+│  ┌──────┬────────┬──────┬────────┬───┐                                      │
+│  │ Total│ Critical│ High │ Medium │Low│                                      │
+│  ├──────┼────────┼──────┼────────┼───┤                                      │
+│  │ 3    │ 2      │ 1    │ 0      │ 0 │                                      │
+│  └──────┴────────┴──────┴────────┴───┘                                      │
+│                                                                               │
+│  Findings                                                                    │
+│                                                                               │
+│  ┌──────────┬──────────────────┬────────────────────────────────────┐        │
+│  │🔴 CRIT. │ DATABASE_URL      │ Move to environment variables     │        │
+│  │          │ src/config/      │ and use AWS Secrets Manager for   │        │
+│  │          │ database.py:42   │ production.                       │        │
+│  ├──────────┼──────────────────┼────────────────────────────────────┤        │
+│  │🔴 CRIT. │ AWS_ACCESS_KEY   │ Rotate AWS credentials            │        │
+│  │          │ .env.local:5     │ immediately. Revoke this access   │        │
+│  │          │                  │ key and generate a new one.       │        │
+│  ├──────────┼──────────────────┼────────────────────────────────────┤        │
+│  │🟠 HIGH  │ JWT_SECRET       │ Use a strong, randomly generated  │        │
+│  │          │ src/auth/jwt.py  │ JWT secret. Consider using RSA    │        │
+│  │          │ :15              │ key pairs.                        │        │
+│  └──────────┴──────────────────┴────────────────────────────────────┘        │
+│                                                                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│  📁 FRONTEND-APP                                                             │
+│                                                                               │
+│  ┌──────┬────────┬──────┬────────┬───┐                                      │
+│  │ Total│ Critical│ High │ Medium │Low│                                      │
+│  ├──────┼────────┼──────┼────────┼───┤                                      │
+│  │ 2    │ 0      │ 1    │ 1      │ 0 │                                      │
+│  └──────┴────────┴──────┴────────┴───┘                                      │
+│                                                                               │
+│  Findings                                                                    │
+│                                                                               │
+│  ┌──────────┬──────────────────┬────────────────────────────────────┐        │
+│  │🟠 HIGH  │ API_KEY          │ API keys should never be          │        │
+│  │          │ public/config.js │ committed. Use environment        │        │
+│  │          │ :8               │ variables and runtime injection.  │        │
+│  ├──────────┼──────────────────┼────────────────────────────────────┤        │
+│  │🟡 MEDIUM│ PRIVATE_KEY      │ Remove private keys from source   │        │
+│  │          │ src/utils/       │ code. Use key management services.│        │
+│  │          │ logger.js:23     │                                   │        │
+│  └──────────┴──────────────────┴────────────────────────────────────┘        │
+│                                                                               │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│  Report generated by GVD - Git Vulnerabilities Detector                     │
+│  2026-04-20 15:45:30                                                         │
+│                                                                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                            DESIGN DETAILS
+═══════════════════════════════════════════════════════════════════════════════
+
+TYPOGRAPHY
+──────────────────────────────────────────────────────────────────────────────
+Title              28pt Helvetica Bold    Primary Blue (#1e40af)
+Subtitle           12pt Helvetica         Muted Gray (#6b7280)
+Repo Headers       14pt Helvetica Bold    Primary Blue (#1e40af)
+Table Headers      10pt Helvetica Bold    White on Blue background
+Body Text          9pt Helvetica          Dark Text (#111827)
+Finding Type       10pt Courier           Dark Text
+Recommendations    9pt Helvetica          Dark Text (leading: 11pt)
+Muted Text         8pt Helvetica          Muted Gray (#6b7280)
+
+
+COLORS
+──────────────────────────────────────────────────────────────────────────────
+Element          Color      Hex Code    Usage
+─────────────────────────────────────────────────────────────────────────────
+Primary          Blue       #1e40af     Main headers, borders, accents
+Critical         Red        #dc2626     Critical severity badge
+High             Orange     #ea580c     High severity badge
+Medium           Yellow     #ca8a04     Medium severity badge
+Low              Green      #16a34a     Low severity badge
+Text             Dark       #111827     Body text
+Muted            Gray       #6b7280     Secondary text, metadata
+Background       Light      #f9fafb     Table alternating rows
+Border           Light      #e5e7eb     Table borders
+
+
+SPACING & LAYOUT
+──────────────────────────────────────────────────────────────────────────────
+Margins:         0.5 inch (all sides)
+Page Size:       Letter (8.5" × 11") - customizable to A4
+Line Height:     Auto with proper leading
+
+Header Section:     0.2" spacer after subtitle
+Summary Section:    0.3" spacer after table
+Repo Sections:      0.15" before header, 0.2" after findings
+Between Findings:   0.08" spacer
+Footer:             0.3" spacer before footer
+
+
+TABLE STYLING
+──────────────────────────────────────────────────────────────────────────────
+Summary Table:
+  Rows: 8 (1 header + 7 data)
+  Columns: 2 (Metric | Count)
+  Header: Primary blue background, white text, bold
+  Rows: Alternating white/light background
+  Borders: 0.5pt light gray
+
+Stats Table:
+  Rows: 2 (1 header + 1 data)
+  Columns: 5 (Total | Critical | High | Medium | Low)
+  Header: Primary blue background
+  Borders: 0.5pt light gray
+  Padding: 4pt vertical, center aligned
+
+Findings Table:
+  Rows: Per finding
+  Columns: 3 (Badge | Details | Recommendation)
+  Badge Column: 0.8 inches, center aligned
+  Details Column: 2.2 inches
+  Recommendation: 2.5 inches
+  Borders: 0.5pt light gray
+  Background: Light alternating
+
+
+CONTENT HIERARCHY
+──────────────────────────────────────────────────────────────────────────────
+1. PAGE LEVEL
+   - Report title (most visible)
+   - Date and repo count
+   
+2. SECTION LEVEL
+   - Section headers (bold, colored)
+   - Summary statistics
+   
+3. REPOSITORY LEVEL
+   - Repo name with folder emoji
+   - Statistics for that repo
+   
+4. FINDING LEVEL
+   - Severity badge (most prominent)
+   - Finding type and file path
+   - Actionable recommendation
+
+
+SEVERITY DISPLAY
+──────────────────────────────────────────────────────────────────────────────
+Format: [Emoji] [LEVEL]
+
+🔴 CRITICAL      Red background, urgent, requires immediate action
+🟠 HIGH          Orange background, important, needs attention
+🟡 MEDIUM        Yellow background, should be addressed
+🟢 LOW           Green background, nice to have
+
+
+SPECIAL CASES
+──────────────────────────────────────────────────────────────────────────────
+No Findings:
+  ✅ No security findings detected
+  All repositories passed security scan.
+
+Repos Sorted By:
+  1. Number of critical findings (descending)
+  2. Total number of findings (descending)
+
+Findings Sorted By:
+  1. Severity (Critical → High → Medium → Low)
+  2. Order within findings list
+
+Page Breaks:
+  - Automatic when content exceeds page
+  - Preserves table structure
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                           CUSTOMIZATION POINTS
+═══════════════════════════════════════════════════════════════════════════════
+
+Function: get_custom_styles()
+────────────────────────────────────────────────────────────────────────────
+Customize fonts, sizes, colors, spacing for any style.
+
+Dictionary: COLORS
+────────────────────────────────────────────────────────────────────────────
+Change hex codes to match your brand colors.
+
+Function: build_header()
+────────────────────────────────────────────────────────────────────────────
+Modify title, subtitle, or add logo/branding.
+
+Function: build_summary_section()
+────────────────────────────────────────────────────────────────────────────
+Change summary metrics displayed or format.
+
+Function: build_finding_row()
+────────────────────────────────────────────────────────────────────────────
+Adjust finding display format or add additional columns.
+
+Parameter: pagesize
+────────────────────────────────────────────────────────────────────────────
+Use letter (default) or A4 for different paper sizes.
+
+
+═══════════════════════════════════════════════════════════════════════════════
+                          FILE OUTPUT LOCATION
+═══════════════════════════════════════════════════════════════════════════════
+
+Default:  <output_dir>/report.pdf
+
+Via Exporter:
+  - report.pdf (PDF report)
+  - report.json (structured data)
+  - report.md (markdown)
+  - summary.txt (plain text)
+
+
+═══════════════════════════════════════════════════════════════════════════════
+"""

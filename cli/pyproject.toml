@@ -7,7 +7,7 @@ name = "gvd"
 version = "0.1.0"
 description = "Git Vulnerabilities Detector"
 authors = [{name = "GVD Team"}]
-dependencies = ["rich"]
+dependencies = ["rich", "reportlab>=4.0.0"]
 readme = "README.md"
 
 [project.scripts]
