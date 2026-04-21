@@ -32,6 +32,10 @@
         <p>Monitor and scan your GitHub repositories from one clean workspace.</p>
       </div>
       <div class="page-header__meta">
+        <div class="search-container">
+          <input type="text" id="repo-search" placeholder="Search repositories..." autocomplete="off">
+          <div class="search-results" id="search-results" hidden></div>
+        </div>
         <span class="repo-count">{{ repos|length }} total</span>
         <label class="filter-select">
           <span>Filter</span>
@@ -296,8 +300,13 @@
     const reportViewerTitle = document.getElementById("report-viewer-title");
     const reportViewerJson = document.getElementById("report-viewer-json");
     const reportViewerFrame = document.getElementById("report-viewer-frame");
+    const repoSearch = document.getElementById("repo-search");
+    const searchResults = document.getElementById("search-results");
     let bulkScanPollTimer = null;
     let activeBulkScanJobId = null;
+    let searchDebounceTimer = null;
+    let currentSearchPage = 1;
+    let searchHasMore = false;
 
     function openReportViewer() {
       reportViewerModal.hidden = false;
@@ -365,6 +374,179 @@
         url.searchParams.set("limit", "15");
       }
       window.location.href = url.toString();
+    }
+
+    function debounceSearch() {
+      if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer);
+      }
+      searchDebounceTimer = setTimeout(function() {
+        performSearch();
+      }, 300);
+    }
+
+    async function performSearch(loadMore = false) {
+      const query = repoSearch.value.trim();
+      if (!query || query.length < 2) {
+        searchResults.hidden = true;
+        return;
+      }
+
+      if (!loadMore) {
+        currentSearchPage = 1;
+        searchResults.innerHTML = '<div class="search-loading">Searching...</div>';
+        searchResults.hidden = false;
+      }
+
+      try {
+        const visibility = repoVisibilityFilter.value === "both" ? "all" : repoVisibilityFilter.value;
+        const params = new URLSearchParams({
+          q: query,
+          visibility: visibility,
+          page: currentSearchPage,
+          per_page: "20"
+        });
+
+        const response = await fetch("/search?" + params.toString());
+        const result = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(result.error || "Search failed");
+        }
+
+        renderSearchResults(result, loadMore);
+        searchHasMore = result.has_next;
+      } catch (error) {
+        searchResults.innerHTML = '<div class="search-error">' + escapeHtml(error.message) + '</div>';
+        searchResults.hidden = false;
+        searchHasMore = false;
+      }
+    }
+
+    function renderSearchResults(result, append = false) {
+      const repos = result.repos || [];
+      
+      if (!append && repos.length === 0) {
+        searchResults.innerHTML = '<div class="search-empty">No repositories found</div>';
+        searchResults.hidden = false;
+        return;
+      }
+
+      const html = repos.map(function(repo) {
+        return [
+          '<div class="search-result-item">',
+          '<div class="search-result-item__header">',
+          '<h4><a href="' + escapeHtml(repo.html_url || '#') + '" target="_blank">' + escapeHtml(repo.full_name || repo.name) + '</a></h4>',
+          '<span class="search-result-item__visibility">' + escapeHtml(repo.visibility) + '</span>',
+          '</div>',
+          '<p class="search-result-item__description">' + escapeHtml(repo.description || 'No description') + '</p>',
+          '<div class="search-result-item__meta">',
+          '<span>Language: ' + escapeHtml(repo.language) + '</span>',
+          '<span>Stars: ' + escapeHtml(repo.stargazers_count) + '</span>',
+          '</div>',
+          '<div class="search-result-item__actions">',
+          '<button class="button button--secondary search-details-btn" data-owner="' + escapeHtml(repo.owner.login) + '" data-repo="' + escapeHtml(repo.name) + '">Details</button>',
+          '<button class="button button--primary search-scan-btn" data-owner="' + escapeHtml(repo.owner.login) + '" data-repo="' + escapeHtml(repo.name) + '" data-repo-url="' + escapeHtml(repo.clone_url) + '">Scan</button>',
+          '</div>',
+          '</div>'
+        ].join("");
+      }).join("");
+
+      if (append) {
+        searchResults.innerHTML += html;
+      } else {
+        searchResults.innerHTML = html;
+      }
+
+      if (searchHasMore) {
+        searchResults.innerHTML += '<button class="search-load-more" id="search-load-more">Load more</button>';
+      }
+
+      searchResults.hidden = false;
+      wireSearchActions();
+    }
+
+    function wireSearchActions() {
+      searchResults.querySelectorAll(".search-details-btn").forEach(function(button) {
+        button.addEventListener("click", function() {
+          const owner = button.dataset.owner;
+          const repo = button.dataset.repo;
+          setLoadingState(repo);
+          openModal();
+          fetchRepoDetails(owner, repo);
+        });
+      });
+
+      searchResults.querySelectorAll(".search-scan-btn").forEach(function(button) {
+        button.addEventListener("click", function() {
+          const owner = button.dataset.owner;
+          const repo = button.dataset.repo;
+          const repoUrl = button.dataset.repoUrl;
+          setScanLoadingState(repo);
+          openScanModal();
+          scanRepository(owner, repo, repoUrl);
+        });
+      });
+
+      const loadMoreBtn = document.getElementById("search-load-more");
+      if (loadMoreBtn) {
+        loadMoreBtn.addEventListener("click", function() {
+          currentSearchPage++;
+          performSearch(true);
+          loadMoreBtn.remove();
+        });
+      }
+    }
+
+    async function fetchRepoDetails(owner, repo) {
+      try {
+        const response = await fetch("/repo-details/" + encodeURIComponent(owner) + "/" + encodeURIComponent(repo));
+        if (!response.ok) {
+          throw new Error("Unable to load repository details.");
+        }
+        const details = await response.json();
+        modalTitle.textContent = details.full_name || details.name;
+        renderMeta(details);
+        modalDescription.textContent = details.description || "No description provided.";
+        modalReadme.textContent = details.readme || "README not available for this repository.";
+        modalLink.href = details.html_url || "#";
+      } catch (error) {
+        modalDescription.textContent = "Repository details could not be loaded.";
+        modalReadme.textContent = error.message;
+      }
+    }
+
+    async function scanRepository(owner, repo, repoUrl) {
+      try {
+        const response = await fetch("/scan", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            owner: owner,
+            repo_name: repo,
+            repo_url: repoUrl
+          })
+        });
+
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.details || result.error || "Scan failed.");
+        }
+
+        scanModalTitle.textContent = "Scan results for " + (result.repo_name || repo);
+        renderScanMeta(result);
+        scanSummary.textContent = result.total_findings
+          ? "The scan completed and found " + result.total_findings + " potential issue(s)."
+          : "The scan completed and no vulnerabilities were found.";
+        renderFindings(result);
+        scanOutput.textContent = result.command_output || "No scanner output captured.";
+      } catch (error) {
+        scanSummary.textContent = "The scan could not be completed.";
+        scanFindings.innerHTML = '<p class="scan-empty">' + escapeHtml(error.message) + "</p>";
+        scanOutput.textContent = error.message;
+      }
     }
 
     async function openJsonReport(url, title) {
@@ -938,6 +1120,25 @@
     });
 
     repoVisibilityFilter.addEventListener("change", applyVisibilityFilter);
+
+    repoSearch.addEventListener("input", debounceSearch);
+    repoSearch.addEventListener("focus", function() {
+      if (repoSearch.value.trim().length >= 2) {
+        searchResults.hidden = false;
+      }
+    });
+
+    document.addEventListener("click", function(event) {
+      if (!event.target.closest(".search-container")) {
+        searchResults.hidden = true;
+      }
+    });
+
+    repoVisibilityFilter.addEventListener("change", function() {
+      if (repoSearch.value.trim().length >= 2) {
+        debounceSearch();
+      }
+    });
   </script>
 </body>
 </html>

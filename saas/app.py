@@ -3,6 +3,7 @@ import json
 import threading
 import uuid
 import subprocess
+import requests
 from datetime import datetime
 from pathlib import Path
 from textwrap import wrap
@@ -11,7 +12,7 @@ from flask import Flask, abort, jsonify, redirect, render_template, request, sen
 
 from auth import get_github_auth_url, get_github_token, get_github_user
 from clone import clone_repos, ensure_repo_cloned
-from github import get_repo_details, get_repos
+from github import get_repo_details, get_repos, search_repos
 
 
 def load_env():
@@ -831,6 +832,33 @@ def repo_details(owner, repo_name):
     if not token:
         return jsonify({"error": "Unauthorized"}), 401
     return jsonify(get_repo_details(token, owner, repo_name))
+
+
+@app.route("/search")
+def search():
+    token = session.get("access_token")
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    query = request.args.get("q", "").strip()
+    visibility = request.args.get("visibility", "all").strip().lower()
+    if visibility not in {"all", "public", "private"}:
+        visibility = "all"
+    
+    try:
+        page = max(1, int(request.args.get("page", 1)))
+        per_page = min(50, max(5, int(request.args.get("per_page", 20))))
+    except (ValueError, TypeError):
+        page = 1
+        per_page = 20
+    
+    try:
+        result = search_repos(token, query, visibility, page, per_page)
+        return jsonify(result)
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": "GitHub API error", "details": str(e)}), 500
+    except Exception as e:
+        return jsonify({"error": "Search failed", "details": str(e)}), 500
 
 
 @app.route("/logout")
