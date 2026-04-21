@@ -24,5 +24,5 @@ ENV PYTHONPATH=/app
 # Create a volume for reports
 VOLUME ["/app/reports"]
 
-# Default command shows help
-CMD ["gvd", "help"]
+# Default command shows help  
+CMD ["python", "cli.py", "help"]
