@@ -28,8 +28,10 @@
   <main class="page">
     <section class="page-header">
       <div>
+      <!--
         <h1>Repositories</h1>
         <p>Monitor and scan your GitHub repositories from one clean workspace.</p>
+      -->
       </div>
       <div class="page-header__meta">
         <div class="search-container">
@@ -154,7 +156,13 @@
           <p class="modal__eyebrow">Scan results</p>
           <h2 id="scan-modal-title">Running scan...</h2>
         </div>
-        <button class="modal__close" type="button" aria-label="Close scan results" data-close-scan-modal="true">Close</button>
+        <div class="modal__actions">
+          <button class="button button--secondary scan-view-json" id="scan-view-json" type="button" hidden>View JSON</button>
+          <button class="button button--secondary scan-view-pdf" id="scan-view-pdf" type="button" hidden>View PDF</button>
+          <a class="button button--secondary scan-download-json" id="scan-download-json" href="#" download hidden>Download JSON</a>
+          <a class="button button--secondary scan-download-pdf" id="scan-download-pdf" href="#" download hidden>Download PDF</a>
+          <button class="modal__close" type="button" aria-label="Close scan results" data-close-scan-modal="true">Close</button>
+        </div>
       </div>
 
       <div class="modal__meta" id="scan-meta"></div>
@@ -279,6 +287,10 @@
     const scanSummary = document.getElementById("scan-summary");
     const scanFindings = document.getElementById("scan-findings");
     const scanOutput = document.getElementById("scan-output");
+    const scanViewJson = document.getElementById("scan-view-json");
+    const scanViewPdf = document.getElementById("scan-view-pdf");
+    const scanDownloadJson = document.getElementById("scan-download-json");
+    const scanDownloadPdf = document.getElementById("scan-download-pdf");
     const bulkScanModal = document.getElementById("bulk-scan-modal");
     const bulkScanModalTitle = document.getElementById("bulk-scan-modal-title");
     const bulkScanMeta = document.getElementById("bulk-scan-meta");
@@ -340,7 +352,11 @@
 
     function closeScanModal() {
       scanModal.hidden = true;
-      if (modal.hidden && bulkScanModal.hidden) {
+      scanViewJson.hidden = true;
+      scanViewPdf.hidden = true;
+      scanDownloadJson.hidden = true;
+      scanDownloadPdf.hidden = true;
+      if (modal.hidden && bulkScanModal.hidden && reportViewerModal.hidden) {
         document.body.classList.remove("modal-open");
       }
     }
@@ -633,6 +649,10 @@
       scanSummary.textContent = "Cloning the repository locally and running the GVD scanner.";
       scanFindings.innerHTML = '<p class="scan-empty">Scan in progress...</p>';
       scanOutput.textContent = "Running cli/dist/cli.exe scan...";
+      scanViewJson.hidden = true;
+      scanViewPdf.hidden = true;
+      scanDownloadJson.hidden = true;
+      scanDownloadPdf.hidden = true;
     }
 
     function escapeHtml(value) {
@@ -1013,6 +1033,18 @@
             : "The scan completed and no vulnerabilities were found.";
           renderFindings(result);
           scanOutput.textContent = result.command_output || "No scanner output captured.";
+          
+          // Show and configure report buttons
+          const reportUrls = result.report_urls || {};
+          scanViewJson.hidden = false;
+          scanViewPdf.hidden = false;
+          scanDownloadJson.hidden = false;
+          scanDownloadPdf.hidden = false;
+          
+          scanViewJson.dataset.reportViewJson = reportUrls.view_json || "";
+          scanDownloadJson.href = reportUrls.download_json || "#";
+          scanViewPdf.dataset.reportViewPdf = reportUrls.view_pdf || "";
+          scanDownloadPdf.href = reportUrls.download_pdf || "#";
         } catch (error) {
           scanSummary.textContent = "The scan could not be completed.";
           scanFindings.innerHTML = '<p class="scan-empty">' + escapeHtml(error.message) + "</p>";
@@ -1024,6 +1056,27 @@
     scanModal.addEventListener("click", function(event) {
       if (event.target.dataset.closeScanModal === "true") {
         closeScanModal();
+      }
+    });
+
+    // Wire scan report buttons
+    scanViewJson.addEventListener("click", function() {
+      if (scanViewJson.classList.contains("is-disabled")) {
+        return;
+      }
+      const url = scanViewJson.dataset.reportViewJson;
+      if (url) {
+        openJsonReport(url, "Scan JSON Report");
+      }
+    });
+
+    scanViewPdf.addEventListener("click", function() {
+      if (scanViewPdf.classList.contains("is-disabled")) {
+        return;
+      }
+      const url = scanViewPdf.dataset.reportViewPdf;
+      if (url) {
+        openPdfReport(url, "Scan PDF Report");
       }
     });
 

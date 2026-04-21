@@ -386,6 +386,13 @@ a {
   gap: 16px;
 }
 
+.modal__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: flex-start;
+}
+
 .modal__header {
   margin-bottom: 20px;
 }

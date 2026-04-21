@@ -4,6 +4,7 @@ import threading
 import uuid
 import subprocess
 import requests
+import platform
 from datetime import datetime
 from pathlib import Path
 from textwrap import wrap
@@ -33,7 +34,14 @@ load_env()
 app = Flask(__name__)
 app.secret_key = os.environ["FLASK_SECRET_KEY"]
 BASE_DIR = Path(__file__).resolve().parent
-CLI_EXE = BASE_DIR.parent / "cli" / "dist" / "cli.exe"
+def get_gvd_executable():
+    """Get the path to the GVD executable based on the operating system."""
+    if platform.system() == "Windows":
+        return BASE_DIR.parent / "cli" / "dist" / "cli.exe"
+    else:
+        return BASE_DIR.parent / "cli" / "dist" / "cli"
+
+CLI_EXE = get_gvd_executable()
 SCAN_REPORTS_DIR = BASE_DIR / "scan_reports"
 BULK_SCAN_JOBS = {}
 BULK_SCAN_JOBS_LOCK = threading.Lock()
@@ -330,9 +338,14 @@ def run_repo_scan(repo, token, job_id=None):
         scan_output_dir,
         command_output,
     )
+    
+    # Use GVD executable to generate PDF (executable already creates all report formats)
     pdf_path = scan_output_dir / "report.pdf"
-    with open(pdf_path, "wb") as pdf_file:
-        pdf_file.write(build_pdf_bytes(build_repo_pdf_lines(scan_result)))
+    if not pdf_path.exists():
+        # Fallback to basic PDF if executable didn't generate it
+        with open(pdf_path, "wb") as pdf_file:
+            pdf_file.write(build_pdf_bytes(build_repo_pdf_lines(scan_result)))
+    
     return scan_result
 
 
@@ -492,8 +505,11 @@ def save_bulk_report(report):
     with open(json_path, "w", encoding="utf-8") as json_file:
         json.dump(report, json_file, indent=2)
 
-    with open(pdf_path, "wb") as pdf_file:
-        pdf_file.write(build_pdf_bytes(build_bulk_pdf_lines(report)))
+    # Use GVD executable PDF (executable already creates all report formats)
+    if not pdf_path.exists():
+        # Fallback to basic PDF if executable didn't generate it
+        with open(pdf_path, "wb") as pdf_file:
+            pdf_file.write(build_pdf_bytes(build_bulk_pdf_lines(report)))
 
     report["report_id"] = report_id
     report["download_urls"] = {
