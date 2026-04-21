@@ -264,6 +264,37 @@ Typical flow:
 
 This approach keeps the project practical, transparent, and easier to reason about.
 
+## Docker Setup (Recommended)
+
+### Quick Start with Docker
+
+The easiest way to run GVD is with Docker and Docker Compose:
+
+```bash
+# 1. Clone the project
+git clone <repository-url>
+cd gvd
+
+# 2. Create environment file
+cp saas/.env.example saas/.env
+# Edit saas/.env with your GitHub OAuth credentials
+
+# 3. Run with Docker Compose
+docker-compose up --build
+
+# Access the app at http://localhost:5000
+```
+
+### Docker Services
+
+- **gvd-saas**: Flask web application (port 5000)
+- **gvd-cli**: CLI scanner service
+- **nginx**: Optional reverse proxy for production
+
+For detailed Docker instructions, see [DOCKER_SETUP.md](DOCKER_SETUP.md).
+
+---
+
 ## Local Development Setup
 
 ### Requirements

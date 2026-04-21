@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  # Production SaaS Web Application
+  gvd-saas:
+    build:
+      context: ./saas
+      dockerfile: Dockerfile
+    container_name: gvd-saas-prod
+    environment:
+      - FLASK_ENV=production
+      - PYTHONPATH=/app
+    env_file:
+      - ./saas/.env
+    volumes:
+      - gvd_scan_reports:/app/scan_reports
+      - gvd_repos:/app/repos
+      - gvd_cli:/app/cli/dist
+    depends_on:
+      - gvd-cli
+    restart: unless-stopped
+    networks:
+      - gvd-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Production CLI Scanner Service
+  gvd-cli:
+    build:
+      context: ./cli
+      dockerfile: Dockerfile
+    container_name: gvd-cli-prod
+    volumes:
+      - gvd_cli:/app/dist
+      - gvd_reports:/app/reports
+    environment:
+      - PYTHONPATH=/app
+    networks:
+      - gvd-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+
+  # Production Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: gvd-nginx-prod
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - gvd_nginx_logs:/var/log/nginx
+    depends_on:
+      - gvd-saas
+    restart: unless-stopped
+    networks:
+      - gvd-network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
+          cpus: '0.1'
+
+volumes:
+  gvd_cli:
+    driver: local
+  gvd_reports:
+    driver: local
+  gvd_scan_reports:
+    driver: local
+  gvd_repos:
+    driver: local
+  gvd_nginx_logs:
+    driver: local
+
+networks:
+  gvd-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
