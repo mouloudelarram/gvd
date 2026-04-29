@@ -1,0 +1,366 @@
+/* GVD Professional Design System - Scan History Styles */
+* Professional styling for scan history page */
+
+.scan-history-container {
+  max-width: var(--container-2xl);
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-6);
+}
+
+.page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: var(--space-8);
+  gap: var(--space-6);
+}
+
+.page-header-content h1 {
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-2);
+}
+
+.page-subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+
+.page-header-actions {
+  display: flex;
+  gap: var(--space-3);
+  flex-shrink: 0;
+}
+
+/* Scan History Grid */
+.scan-history-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+  gap: var(--space-6);
+}
+
+/* Scan Report Card */
+.scan-report-card {
+  background-color: var(--color-white);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  transition: all var(--transition-base);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.scan-report-card:hover {
+  border-color: var(--color-accent);
+  box-shadow: var(--shadow-lg);
+  transform: translateY(-2px);
+}
+
+.scan-report-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.scan-report-repo h3 {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin: 0 0 var(--space-1) 0;
+}
+
+.scan-date {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.scan-date::before {
+  content: '📅';
+  font-size: var(--font-size-xs);
+}
+
+.scan-report-status {
+  flex-shrink: 0;
+}
+
+/* Scan Report Metrics */
+.scan-report-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: var(--space-3);
+}
+
+.metric-item {
+  text-align: center;
+  padding: var(--space-3);
+  border-radius: var(--radius-lg);
+  background-color: var(--color-gray-50);
+  border: 1px solid var(--color-border-secondary);
+  transition: all var(--transition-fast);
+}
+
+.metric-item:hover {
+  background-color: var(--color-gray-100);
+  transform: translateY(-1px);
+}
+
+.metric-item-critical {
+  background-color: var(--color-error-bg);
+  border-color: var(--color-error);
+}
+
+.metric-item-critical:hover {
+  background-color: var(--color-error);
+  color: var(--color-white);
+}
+
+.metric-item-high {
+  background-color: var(--color-warning-bg);
+  border-color: var(--color-warning);
+}
+
+.metric-item-high:hover {
+  background-color: var(--color-warning);
+  color: var(--color-white);
+}
+
+.metric-item-medium {
+  background-color: var(--color-accent-bg);
+  border-color: var(--color-accent);
+}
+
+.metric-item-medium:hover {
+  background-color: var(--color-accent);
+  color: var(--color-white);
+}
+
+.metric-item-low {
+  background-color: var(--color-success-bg);
+  border-color: var(--color-success);
+}
+
+.metric-item-low:hover {
+  background-color: var(--color-success);
+  color: var(--color-white);
+}
+
+.metric-value {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-1);
+}
+
+.metric-label {
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Scan Report Actions */
+.scan-report-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border-secondary);
+}
+
+.scan-report-actions .btn {
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+}
+
+.scan-report-actions .btn svg {
+  margin-right: var(--space-2);
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+}
+
+.empty-state-content {
+  max-width: 500px;
+  padding: var(--space-8);
+}
+
+.empty-state-icon {
+  margin-bottom: var(--space-6);
+  color: var(--color-gray-300);
+}
+
+.empty-state-icon svg {
+  width: 64px;
+  height: 64px;
+}
+
+.empty-state h2 {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text-primary);
+  margin-bottom: var(--space-3);
+}
+
+.empty-state-description {
+  font-size: var(--font-size-lg);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-6);
+  line-height: var(--line-height-relaxed);
+}
+
+.empty-state-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: center;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .scan-history-container {
+    padding: var(--space-6) var(--space-4);
+  }
+  
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-4);
+  }
+  
+  .page-header-actions {
+    justify-content: stretch;
+  }
+  
+  .page-header-actions .btn {
+    flex: 1;
+  }
+  
+  .scan-history-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+  
+  .scan-report-card {
+    padding: var(--space-4);
+  }
+  
+  .scan-report-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+  }
+  
+  .scan-report-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .scan-report-actions {
+    flex-direction: column;
+  }
+  
+  .scan-report-actions .btn {
+    width: 100%;
+  }
+  
+  .empty-state-content {
+    padding: var(--space-6) var(--space-4);
+  }
+}
+
+@media (max-width: 480px) {
+  .scan-report-metrics {
+    grid-template-columns: 1fr;
+  }
+  
+  .empty-state-icon svg {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* Loading State */
+.scan-history-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  gap: var(--space-3);
+  color: var(--color-text-secondary);
+}
+
+.scan-history-loading::before {
+  content: '';
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--color-gray-200);
+  border-top-color: var(--color-accent);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+/* Badge Variants */
+.badge-success {
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
+  border: 1px solid var(--color-success);
+}
+
+.badge-warning {
+  background-color: var(--color-warning-bg);
+  color: var(--color-warning);
+  border: 1px solid var(--color-warning);
+}
+
+.badge-error {
+  background-color: var(--color-error-bg);
+  color: var(--color-error);
+  border: 1px solid var(--color-error);
+}
+
+.badge-info {
+  background-color: var(--color-accent-bg);
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+}
+
+/* Animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Print Styles */
+@media print {
+  .page-header-actions,
+  .scan-report-actions {
+    display: none;
+  }
+  
+  .scan-history-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+  }
+  
+  .scan-report-card {
+    break-inside: avoid;
+    border: 1px solid var(--color-border-primary);
+  }
+}

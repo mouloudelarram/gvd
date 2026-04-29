@@ -1,816 +1,366 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>GVD Dashboard</title>
-  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body class="app-shell">
-  {% set visible_count = request.args.get('limit', 15) | int %}
-  {% set displayed_repos = repos[:visible_count] %}
+{% extends "base.html" %}
 
-  <header class="topbar">
-    <div class="topbar__inner">
-      <div class="brand">
-        <img class="brand__logo-image" src="{{ url_for('static', filename='images/logo.png') }}" alt="GVD logo">
-        <div class="brand__name">GitHub vulnerability detector</div>
+{% block title %}Dashboard - GVD{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+{% endblock %}
+
+{% set visible_count = request.args.get('limit', 15) | int %}
+{% set displayed_repos = repos[:visible_count] %}
+
+{% block content %}
+<div class="dashboard-container">
+  <!-- Dashboard Header -->
+  <div class="dashboard-header">
+    <div class="dashboard-header-content">
+      <div class="dashboard-title-section">
+        <h1 class="dashboard-title">Repositories</h1>
+        <p class="dashboard-subtitle">Monitor and scan your GitHub repositories for security vulnerabilities</p>
       </div>
-
-      <div class="topbar__actions">
-        <span class="topbar__user">{{ user.name or user.login }}</span>
-        <a class="button button--secondary" href="{{ url_for('logout') }}">Logout</a>
+      
+      <div class="dashboard-actions">
+        <div class="filter-controls">
+          <div class="search-wrapper">
+            <input type="text" id="repo-search" placeholder="Search repositories..." autocomplete="off" class="search-input">
+            <div class="search-results" id="search-results" hidden></div>
+          </div>
+          
+          <div class="filter-dropdown">
+            <select id="repo-visibility-filter" class="filter-select">
+              <option value="both" {% if current_visibility == 'both' %}selected{% endif %}>All Repositories</option>
+              <option value="public" {% if current_visibility == 'public' %}selected{% endif %}>Public</option>
+              <option value="private" {% if current_visibility == 'private' %}selected{% endif %}>Private</option>
+            </select>
+          </div>
+        </div>
+        
+        <button class="btn btn-primary" id="scan-all-button" type="button">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 2v6M8 10v4M3 8h6M10 8h3M4 4l4 4M12 4l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Scan All
+        </button>
       </div>
     </div>
-  </header>
+  </div>
 
-  <main class="page">
-    <section class="page-header">
-      <div>
-      <!--
-        <h1>Repositories</h1>
-        <p>Monitor and scan your GitHub repositories from one clean workspace.</p>
-      -->
-      </div>
-      <div class="page-header__meta">
-        <div class="search-container">
-          <input type="text" id="repo-search" placeholder="Search repositories..." autocomplete="off">
-          <div class="search-results" id="search-results" hidden></div>
+  <!-- Metrics Bar -->
+  <div class="metrics-bar">
+    <div class="metrics-container">
+      <div class="metric-card">
+        <div class="metric-icon">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 3h14v14H3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M3 7h14M7 3v14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </div>
-        <span class="repo-count">{{ repos|length }} total</span>
-        <label class="filter-select">
-          <span>Filter</span>
-          <select id="repo-visibility-filter">
-            <option value="both" {% if current_visibility == 'both' %}selected{% endif %}>Both</option>
-            <option value="public" {% if current_visibility == 'public' %}selected{% endif %}>Public</option>
-            <option value="private" {% if current_visibility == 'private' %}selected{% endif %}>Private</option>
-          </select>
-        </label>
-        <button class="button button--primary" id="scan-all-button" type="button">Scan all</button>
+        <div class="metric-content">
+          <div class="metric-value">{{ repos|length }}</div>
+          <div class="metric-label">Total Repositories</div>
+        </div>
       </div>
-    </section>
+      
+      <div class="metric-card">
+        <div class="metric-icon metric-icon-public">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 2C10 2 8 5 8 8C8 11 10 14 10 14C10 14 12 11 12 8C12 5 10 2 10 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 14V18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M6 18H14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="metric-content">
+          <div class="metric-value">{{ repos|selectattr('visibility', 'equalto', 'public')|list|length }}</div>
+          <div class="metric-label">Public Repos</div>
+        </div>
+      </div>
+      
+      <div class="metric-card">
+        <div class="metric-icon metric-icon-private">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="7" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
+            <path d="M7 7V5a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="metric-content">
+          <div class="metric-value">{{ repos|selectattr('visibility', 'equalto', 'private')|list|length }}</div>
+          <div class="metric-label">Private Repos</div>
+        </div>
+      </div>
+      
+      <div class="metric-card">
+        <div class="metric-icon metric-icon-scanned">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 2C10 2 8 5 8 8C8 11 10 14 10 14C10 14 12 11 12 8C12 5 10 2 10 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="metric-content">
+          <div class="metric-value">0</div>
+          <div class="metric-label">Scanned Today</div>
+        </div>
+      </div>
+      
+      <div class="metric-card metric-card-danger">
+        <div class="metric-icon metric-icon-risk">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M10 2L2 8v8l8 6 8-6V8l-8-6z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 6v4M10 12h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="metric-content">
+          <div class="metric-value">0</div>
+          <div class="metric-label">High Risk Findings</div>
+        </div>
+      </div>
+    </div>
+  </div>
 
-    {% if message %}
-    <div class="notice">{{ message }}</div>
-    {% endif %}
+  <!-- Message Notifications -->
+  {% if message %}
+  <div class="alert alert-success">
+    <div class="alert-content">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M13.5 4.5L6 12L2.5 8.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>{{ message }}</span>
+    </div>
+  </div>
+  {% endif %}
 
+  <!-- Repository Grid -->
+  <div class="repository-section">
     {% if displayed_repos %}
-    <section class="repo-grid" aria-label="Repository list">
+    <div class="repo-grid" aria-label="Repository list">
       {% for repo in displayed_repos %}
       <article class="repo-card" data-visibility="{{ repo.visibility }}">
-        <a
-          class="repo-card__overlay"
-          href="{{ repo.html_url or '#' }}"
-          aria-label="Open details for {{ repo.name }}"
-        ></a>
-
-        <div class="repo-card__header">
-          <h2 class="repo-card__title">
-            <a href="{{ repo.html_url or '#' }}">{{ repo.name }}</a>
-          </h2>
-          <span class="repo-card__visibility">{{ repo.visibility }}</span>
+        <div class="repo-card-header">
+          <div class="repo-info">
+            <h3 class="repo-name">
+              <a href="{{ repo.html_url or '#' }}" target="_blank" rel="noopener noreferrer">{{ repo.name }}</a>
+            </h3>
+            <div class="repo-meta">
+              <span class="badge badge-{{ repo.visibility }}">{{ repo.visibility }}</span>
+              {% if repo.language %}
+              <span class="repo-language">{{ repo.language }}</span>
+              {% endif %}
+            </div>
+          </div>
+          <div class="repo-stats">
+            {% if repo.stargazers_count %}
+            <div class="stat-item">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 2l1.5 3L12 6l-2.5 2L10 11l-3-2-3 2 0.5-3L2 6l3.5-1L7 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>{{ repo.stargazers_count }}</span>
+            </div>
+            {% endif %}
+            {% if repo.forks_count %}
+            <div class="stat-item">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 3h3v3H3zM8 3h3v3H8zM3 8h3v3H3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M6 6h2M6 11h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span>{{ repo.forks_count }}</span>
+            </div>
+            {% endif %}
+          </div>
         </div>
-
-        <p class="repo-card__description">
-          {{ repo.description or "No description provided." }}
-        </p>
-
-        <div class="repo-card__footer">
+        
+        <div class="repo-card-body">
+          <p class="repo-description">
+            {{ repo.description or "No description provided." }}
+          </p>
+          
+          <div class="repo-updated">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 1v3M6 8v3M3 6h3M8 6h1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            {% if repo.updated_at %}
+            <span>Updated {{ repo.updated_at|timeago }}</span>
+            {% else %}
+            <span>No recent activity</span>
+            {% endif %}
+          </div>
+        </div>
+        
+        <div class="repo-card-footer">
           <button
-            class="repo-card__details repo-card__details-button"
+            class="btn btn-ghost btn-sm repo-details-btn"
             type="button"
             data-owner="{{ repo.owner.login }}"
             data-repo="{{ repo.name }}"
           >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7 2C7 2 5 4 5 6C5 8 7 10 7 10C7 10 9 8 9 6C9 4 7 2 7 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M7 10v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M4 12h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
             Details
           </button>
 
           <button
-            class="button button--primary scan-button"
+            class="btn btn-primary btn-sm repo-scan-btn"
             type="button"
             data-owner="{{ repo.owner.login }}"
             data-repo="{{ repo.name }}"
             data-repo-url="{{ repo.clone_url }}"
           >
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7 1v3M7 10v3M3 7h3M10 7h1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="7" cy="7" r="1" fill="currentColor"/>
+            </svg>
             Scan
           </button>
         </div>
       </article>
       {% endfor %}
-    </section>
+    </div>
 
-    {% else %}
-    <section class="empty-state">
-      <h2>No repositories found</h2>
-      <p>
-        {% if current_visibility == 'both' %}
-        Your connected GitHub account does not have any repositories to display yet.
-        {% else %}
-        No {{ current_visibility }} repositories match the current filter.
-        {% endif %}
-      </p>
-    </section>
-    {% endif %}
-
+    <!-- Pagination -->
     {% if repos|length > visible_count %}
-    <div class="pagination">
-      <a class="button button--secondary" href="{{ url_for('dashboard', limit=visible_count + 15, visibility=current_visibility) }}">See more</a>
+    <div class="pagination-container">
+      <a class="btn btn-secondary" href="{{ url_for('dashboard', limit=visible_count + 15, visibility=current_visibility) }}">
+        Load More Repositories
+      </a>
     </div>
     {% endif %}
-  </main>
 
-  <div class="modal" id="repo-modal" hidden>
-    <div class="modal__backdrop" data-close-modal="true"></div>
-    <section class="modal__panel" aria-modal="true" role="dialog" aria-labelledby="modal-title">
-      <div class="modal__header">
-        <div>
-          <p class="modal__eyebrow">Repository details</p>
-          <h2 id="modal-title">Loading...</h2>
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-content">
+        <div class="empty-state-icon">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M24 8L12 16v16l12 8 12-8V16l-12-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M20 20l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
         </div>
-        <button class="modal__close" type="button" aria-label="Close details" data-close-modal="true">Close</button>
+        <h2 class="empty-state-title">No repositories found</h2>
+        <p class="empty-state-description">
+          {% if current_visibility == 'both' %}
+          Your connected GitHub account does not have any repositories to display yet.
+          {% else %}
+          No {{ current_visibility }} repositories match the current filter.
+          {% endif %}
+        </p>
+        {% if current_visibility != 'both' %}
+        <button class="btn btn-secondary" onclick="resetVisibilityFilter()">
+          Show All Repositories
+        </button>
+        {% endif %}
       </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
 
-      <div class="modal__meta" id="modal-meta"></div>
-
-      <div class="modal__section">
+    <!-- Modals -->
+<div class="modal-overlay" id="repo-modal" hidden>
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">Repository Details</h2>
+      <button class="btn btn-ghost btn-sm" data-close-modal="true">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-meta" id="modal-meta"></div>
+      <div class="modal-section">
         <h3>Description</h3>
         <p id="modal-description">Loading repository details...</p>
       </div>
-
-      <div class="modal__section">
-        <div class="modal__section-header">
-          <h3>README</h3>
-          <a class="button button--secondary" id="modal-link" href="#" target="_blank" rel="noreferrer">Open on GitHub</a>
-        </div>
-        <pre class="modal__readme" id="modal-readme">Loading README...</pre>
+      <div class="modal-section">
+        <h3>README</h3>
+        <pre class="code-block" id="modal-readme">Loading README...</pre>
       </div>
-    </section>
+    </div>
+    <div class="modal-footer">
+      <a href="#" id="modal-link" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M8 2v6M8 10v4M3 8h6M10 8h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Open on GitHub
+      </a>
+    </div>
   </div>
+</div>
 
-  <div class="modal" id="scan-modal" hidden>
-    <div class="modal__backdrop" data-close-scan-modal="true"></div>
-    <section class="modal__panel" aria-modal="true" role="dialog" aria-labelledby="scan-modal-title">
-      <div class="modal__header">
-        <div>
-          <p class="modal__eyebrow">Scan results</p>
-          <h2 id="scan-modal-title">Running scan...</h2>
-        </div>
-        <div class="modal__actions">
-          <button class="button button--secondary scan-view-json" id="scan-view-json" type="button" hidden>View JSON</button>
-          <button class="button button--secondary scan-view-pdf" id="scan-view-pdf" type="button" hidden>View PDF</button>
-          <a class="button button--secondary scan-download-json" id="scan-download-json" href="#" download hidden>Download JSON</a>
-          <a class="button button--secondary scan-download-pdf" id="scan-download-pdf" href="#" download hidden>Download PDF</a>
-          <button class="modal__close" type="button" aria-label="Close scan results" data-close-scan-modal="true">Close</button>
-        </div>
-      </div>
-
-      <div class="modal__meta" id="scan-meta"></div>
-
-      <div class="modal__section">
+<!-- Scan Results Modal -->
+<div class="modal-overlay" id="scan-modal" hidden>
+  <div class="modal modal-large">
+    <div class="modal-header">
+      <h2 class="modal-title">Scan Results</h2>
+      <button class="btn btn-ghost btn-sm" data-close-scan-modal="true">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-meta" id="scan-meta"></div>
+      <div class="modal-section">
         <h3>Summary</h3>
         <p id="scan-summary">The repository scan is starting.</p>
       </div>
-
-      <div class="modal__section">
+      <div class="modal-section">
         <h3>Findings</h3>
-        <div class="scan-findings" id="scan-findings">
-          <p class="scan-empty">No findings yet.</p>
+        <div class="findings-container" id="scan-findings">
+          <p class="text-muted">No findings yet.</p>
         </div>
       </div>
-
-      <div class="modal__section">
-        <h3>Scan output</h3>
-        <pre class="modal__readme" id="scan-output">Waiting for scanner output...</pre>
+      <div class="modal-section">
+        <h3>Scan Output</h3>
+        <pre class="code-block" id="scan-output">Waiting for scanner output...</pre>
       </div>
-    </section>
+    </div>
+    <div class="modal-footer">
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="scan-view-json" hidden>View JSON</button>
+        <button class="btn btn-ghost" id="scan-view-pdf" hidden>View PDF</button>
+        <a href="#" class="btn btn-ghost" id="scan-download-json" download hidden>Download JSON</a>
+        <a href="#" class="btn btn-ghost" id="scan-download-pdf" download hidden>Download PDF</a>
+      </div>
+    </div>
   </div>
+</div>
 
-  <div class="modal" id="bulk-scan-modal" hidden>
-    <div class="modal__backdrop" data-close-bulk-scan-modal="true"></div>
-    <section class="modal__panel" aria-modal="true" role="dialog" aria-labelledby="bulk-scan-modal-title">
-      <div class="modal__header">
-        <div>
-          <p class="modal__eyebrow">Bulk scan report</p>
-          <h2 id="bulk-scan-modal-title">Running full scan...</h2>
-        </div>
-        <button class="modal__close" type="button" aria-label="Close bulk scan report" data-close-bulk-scan-modal="true">Close</button>
+<!-- Report Viewer Modal -->
+<div class="modal-overlay" id="report-viewer-modal" hidden>
+  <div class="modal modal-large">
+    <div class="modal-header">
+      <h2 class="modal-title" id="report-viewer-title">Report Viewer</h2>
+      <button class="btn btn-ghost btn-sm" data-close-modal="true">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div id="report-content" class="report-content">
+        <p class="text-muted">Loading report...</p>
       </div>
-
-      <div class="modal__section-header">
-        <div class="modal__meta modal__meta--compact" id="bulk-scan-meta"></div>
-        <div class="bulk-scan-actions">
-          <button class="button button--secondary is-disabled" id="bulk-view-json" type="button">View JSON</button>
-          <a class="button button--secondary is-disabled" id="bulk-download-json" href="#" download>Download JSON</a>
-          <button class="button button--secondary is-disabled" id="bulk-view-pdf" type="button">View PDF</button>
-          <a class="button button--secondary is-disabled" id="bulk-download-pdf" href="#" download>Download PDF</a>
-        </div>
+    </div>
+    <div class="modal-footer">
+      <div class="modal-actions">
+        <button class="btn btn-secondary" data-close-modal="true">Close</button>
       </div>
-
-      <div class="modal__section">
-        <h3>Summary</h3>
-        <p id="bulk-scan-summary">The full repository scan is starting.</p>
-      </div>
-
-      <div class="modal__section">
-        <h3>Live logs</h3>
-        <pre class="modal__readme bulk-scan-log" id="bulk-scan-log">Waiting for bulk scan logs...</pre>
-      </div>
-
-      <div class="modal__section">
-        <div class="bulk-live-header">
-          <h3>Current repository</h3>
-          <button class="button button--secondary is-disabled" id="skip-current-button" type="button">Skip current</button>
-        </div>
-        <div class="bulk-report-list" id="bulk-current-repo">
-          <p class="scan-empty">No repository is running yet.</p>
-        </div>
-      </div>
-
-      <div class="modal__section">
-        <h3>Pending repositories</h3>
-        <div class="bulk-report-list" id="bulk-pending-list">
-          <p class="scan-empty">No pending repositories.</p>
-        </div>
-      </div>
-
-      <div class="modal__section">
-        <h3>Repositories</h3>
-        <div class="bulk-report-list" id="bulk-report-list">
-          <p class="scan-empty">Bulk scan in progress...</p>
-        </div>
-      </div>
-
-      <div class="modal__section">
-        <h3>Failed repositories</h3>
-        <div class="bulk-report-list" id="bulk-failure-list">
-          <p class="scan-empty">No failures yet.</p>
-        </div>
-      </div>
-
-      <div class="modal__section">
-        <h3>Skipped repositories</h3>
-        <div class="bulk-report-list" id="bulk-skipped-list">
-          <p class="scan-empty">No skipped repositories.</p>
-        </div>
-      </div>
-    </section>
+    </div>
   </div>
+</div>
+{% endblock %}
 
-  <div class="modal" id="report-viewer-modal" hidden>
-    <div class="modal__backdrop" data-close-report-viewer="true"></div>
-    <section class="modal__panel modal__panel--wide" aria-modal="true" role="dialog" aria-labelledby="report-viewer-title">
-      <div class="modal__header">
-        <div>
-          <p class="modal__eyebrow">Report viewer</p>
-          <h2 id="report-viewer-title">Report</h2>
-        </div>
-        <button class="modal__close" type="button" aria-label="Close report viewer" data-close-report-viewer="true">Close</button>
-      </div>
-
-      <pre class="modal__readme report-viewer__json" id="report-viewer-json" hidden>Loading report...</pre>
-      <iframe class="report-viewer__frame" id="report-viewer-frame" hidden title="Report preview"></iframe>
-    </section>
-  </div>
-
-  <script>
-    const repoCount = document.querySelector(".repo-count");
-    const modal = document.getElementById("repo-modal");
-    const modalTitle = document.getElementById("modal-title");
-    const modalMeta = document.getElementById("modal-meta");
-    const modalDescription = document.getElementById("modal-description");
-    const modalReadme = document.getElementById("modal-readme");
-    const modalLink = document.getElementById("modal-link");
-    const scanModal = document.getElementById("scan-modal");
-    const scanModalTitle = document.getElementById("scan-modal-title");
-    const scanMeta = document.getElementById("scan-meta");
-    const scanSummary = document.getElementById("scan-summary");
-    const scanFindings = document.getElementById("scan-findings");
-    const scanOutput = document.getElementById("scan-output");
-    const scanViewJson = document.getElementById("scan-view-json");
-    const scanViewPdf = document.getElementById("scan-view-pdf");
-    const scanDownloadJson = document.getElementById("scan-download-json");
-    const scanDownloadPdf = document.getElementById("scan-download-pdf");
-    const bulkScanModal = document.getElementById("bulk-scan-modal");
-    const bulkScanModalTitle = document.getElementById("bulk-scan-modal-title");
-    const bulkScanMeta = document.getElementById("bulk-scan-meta");
-    const bulkScanSummary = document.getElementById("bulk-scan-summary");
-    const bulkReportList = document.getElementById("bulk-report-list");
-    const bulkFailureList = document.getElementById("bulk-failure-list");
-    const bulkSkippedList = document.getElementById("bulk-skipped-list");
-    const bulkCurrentRepo = document.getElementById("bulk-current-repo");
-    const bulkPendingList = document.getElementById("bulk-pending-list");
-    const bulkViewJson = document.getElementById("bulk-view-json");
-    const bulkDownloadJson = document.getElementById("bulk-download-json");
-    const bulkViewPdf = document.getElementById("bulk-view-pdf");
-    const bulkDownloadPdf = document.getElementById("bulk-download-pdf");
-    const bulkScanLog = document.getElementById("bulk-scan-log");
-    const scanAllButton = document.getElementById("scan-all-button");
-    const repoVisibilityFilter = document.getElementById("repo-visibility-filter");
-    const skipCurrentButton = document.getElementById("skip-current-button");
-    const reportViewerModal = document.getElementById("report-viewer-modal");
-    const reportViewerTitle = document.getElementById("report-viewer-title");
-    const reportViewerJson = document.getElementById("report-viewer-json");
-    const reportViewerFrame = document.getElementById("report-viewer-frame");
-    const repoSearch = document.getElementById("repo-search");
-    const searchResults = document.getElementById("search-results");
-    let bulkScanPollTimer = null;
-    let activeBulkScanJobId = null;
-    let searchDebounceTimer = null;
-    let currentSearchPage = 1;
-    let searchHasMore = false;
-
-    function openReportViewer() {
-      reportViewerModal.hidden = false;
-      document.body.classList.add("modal-open");
-    }
-
-    function closeReportViewer() {
-      reportViewerModal.hidden = true;
-      reportViewerJson.hidden = true;
-      reportViewerFrame.hidden = true;
-      reportViewerFrame.src = "about:blank";
-      if (modal.hidden && scanModal.hidden && bulkScanModal.hidden) {
-        document.body.classList.remove("modal-open");
-      }
-    }
-
-    function openModal() {
-      modal.hidden = false;
-      document.body.classList.add("modal-open");
-    }
-
-    function closeModal() {
-      modal.hidden = true;
-      document.body.classList.remove("modal-open");
-    }
-
-    function openScanModal() {
-      scanModal.hidden = false;
-      document.body.classList.add("modal-open");
-    }
-
-    function closeScanModal() {
-      scanModal.hidden = true;
-      scanViewJson.hidden = true;
-      scanViewPdf.hidden = true;
-      scanDownloadJson.hidden = true;
-      scanDownloadPdf.hidden = true;
-      if (modal.hidden && bulkScanModal.hidden && reportViewerModal.hidden) {
-        document.body.classList.remove("modal-open");
-      }
-    }
-
-    function openBulkScanModal() {
-      bulkScanModal.hidden = false;
-      document.body.classList.add("modal-open");
-    }
-
-    function closeBulkScanModal() {
-      bulkScanModal.hidden = true;
-      stopBulkScanPolling();
-      if (modal.hidden && scanModal.hidden && reportViewerModal.hidden) {
-        document.body.classList.remove("modal-open");
-      }
-    }
-
-    function setActionState(element, enabled) {
-      if (enabled) {
-        element.classList.remove("is-disabled");
-      } else {
-        element.classList.add("is-disabled");
-      }
-    }
-
-    function applyVisibilityFilter() {
-      const visibility = repoVisibilityFilter.value || "both";
-      const url = new URL(window.location.href);
-      url.searchParams.set("visibility", visibility);
-      if (!url.searchParams.get("limit")) {
-        url.searchParams.set("limit", "15");
-      }
-      window.location.href = url.toString();
-    }
-
-    function debounceSearch() {
-      if (searchDebounceTimer) {
-        clearTimeout(searchDebounceTimer);
-      }
-      searchDebounceTimer = setTimeout(function() {
-        performSearch();
-      }, 300);
-    }
-
-    async function performSearch(loadMore = false) {
-      const query = repoSearch.value.trim();
-      if (!query || query.length < 2) {
-        searchResults.hidden = true;
-        return;
-      }
-
-      if (!loadMore) {
-        currentSearchPage = 1;
-        searchResults.innerHTML = '<div class="search-loading">Searching...</div>';
-        searchResults.hidden = false;
-      }
-
-      try {
-        const visibility = repoVisibilityFilter.value === "both" ? "all" : repoVisibilityFilter.value;
-        const params = new URLSearchParams({
-          q: query,
-          visibility: visibility,
-          page: currentSearchPage,
-          per_page: "20"
-        });
-
-        const response = await fetch("/search?" + params.toString());
-        const result = await response.json();
-        
-        if (!response.ok) {
-          throw new Error(result.error || "Search failed");
-        }
-
-        renderSearchResults(result, loadMore);
-        searchHasMore = result.has_next;
-      } catch (error) {
-        searchResults.innerHTML = '<div class="search-error">' + escapeHtml(error.message) + '</div>';
-        searchResults.hidden = false;
-        searchHasMore = false;
-      }
-    }
-
-    function renderSearchResults(result, append = false) {
-      const repos = result.repos || [];
-      
-      if (!append && repos.length === 0) {
-        searchResults.innerHTML = '<div class="search-empty">No repositories found</div>';
-        searchResults.hidden = false;
-        return;
-      }
-
-      const html = repos.map(function(repo) {
-        return [
-          '<div class="search-result-item">',
-          '<div class="search-result-item__header">',
-          '<h4><a href="' + escapeHtml(repo.html_url || '#') + '" target="_blank">' + escapeHtml(repo.full_name || repo.name) + '</a></h4>',
-          '<span class="search-result-item__visibility">' + escapeHtml(repo.visibility) + '</span>',
-          '</div>',
-          '<p class="search-result-item__description">' + escapeHtml(repo.description || 'No description') + '</p>',
-          '<div class="search-result-item__meta">',
-          '<span>Language: ' + escapeHtml(repo.language) + '</span>',
-          '<span>Stars: ' + escapeHtml(repo.stargazers_count) + '</span>',
-          '</div>',
-          '<div class="search-result-item__actions">',
-          '<button class="button button--secondary search-details-btn" data-owner="' + escapeHtml(repo.owner.login) + '" data-repo="' + escapeHtml(repo.name) + '">Details</button>',
-          '<button class="button button--primary search-scan-btn" data-owner="' + escapeHtml(repo.owner.login) + '" data-repo="' + escapeHtml(repo.name) + '" data-repo-url="' + escapeHtml(repo.clone_url) + '">Scan</button>',
-          '</div>',
-          '</div>'
-        ].join("");
-      }).join("");
-
-      if (append) {
-        searchResults.innerHTML += html;
-      } else {
-        searchResults.innerHTML = html;
-      }
-
-      if (searchHasMore) {
-        searchResults.innerHTML += '<button class="search-load-more" id="search-load-more">Load more</button>';
-      }
-
-      searchResults.hidden = false;
-      wireSearchActions();
-    }
-
-    function wireSearchActions() {
-      searchResults.querySelectorAll(".search-details-btn").forEach(function(button) {
-        button.addEventListener("click", function() {
-          const owner = button.dataset.owner;
-          const repo = button.dataset.repo;
-          setLoadingState(repo);
-          openModal();
-          fetchRepoDetails(owner, repo);
-        });
-      });
-
-      searchResults.querySelectorAll(".search-scan-btn").forEach(function(button) {
-        button.addEventListener("click", function() {
-          const owner = button.dataset.owner;
-          const repo = button.dataset.repo;
-          const repoUrl = button.dataset.repoUrl;
-          setScanLoadingState(repo);
-          openScanModal();
-          scanRepository(owner, repo, repoUrl);
-        });
-      });
-
-      const loadMoreBtn = document.getElementById("search-load-more");
-      if (loadMoreBtn) {
-        loadMoreBtn.addEventListener("click", function() {
-          currentSearchPage++;
-          performSearch(true);
-          loadMoreBtn.remove();
-        });
-      }
-    }
-
-    async function fetchRepoDetails(owner, repo) {
-      try {
-        const response = await fetch("/repo-details/" + encodeURIComponent(owner) + "/" + encodeURIComponent(repo));
-        if (!response.ok) {
-          throw new Error("Unable to load repository details.");
-        }
-        const details = await response.json();
-        modalTitle.textContent = details.full_name || details.name;
-        renderMeta(details);
-        modalDescription.textContent = details.description || "No description provided.";
-        modalReadme.textContent = details.readme || "README not available for this repository.";
-        modalLink.href = details.html_url || "#";
-      } catch (error) {
-        modalDescription.textContent = "Repository details could not be loaded.";
-        modalReadme.textContent = error.message;
-      }
-    }
-
-    async function scanRepository(owner, repo, repoUrl) {
-      try {
-        const response = await fetch("/scan", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            owner: owner,
-            repo_name: repo,
-            repo_url: repoUrl
-          })
-        });
-
-        const result = await response.json();
-        if (!response.ok) {
-          throw new Error(result.details || result.error || "Scan failed.");
-        }
-
-        scanModalTitle.textContent = "Scan results for " + (result.repo_name || repo);
-        renderScanMeta(result);
-        scanSummary.textContent = result.total_findings
-          ? "The scan completed and found " + result.total_findings + " potential issue(s)."
-          : "The scan completed and no vulnerabilities were found.";
-        renderFindings(result);
-        scanOutput.textContent = result.command_output || "No scanner output captured.";
-      } catch (error) {
-        scanSummary.textContent = "The scan could not be completed.";
-        scanFindings.innerHTML = '<p class="scan-empty">' + escapeHtml(error.message) + "</p>";
-        scanOutput.textContent = error.message;
-      }
-    }
-
-    async function openJsonReport(url, title) {
-      reportViewerTitle.textContent = title;
-      reportViewerJson.hidden = false;
-      reportViewerFrame.hidden = true;
-      reportViewerJson.textContent = "Loading report...";
-      openReportViewer();
-
-      try {
-        const response = await fetch(url);
-        if (!response.ok) {
-          throw new Error("Unable to load report.");
-        }
-        const text = await response.text();
-        try {
-          reportViewerJson.textContent = JSON.stringify(JSON.parse(text), null, 2);
-        } catch (error) {
-          reportViewerJson.textContent = text;
-        }
-      } catch (error) {
-        reportViewerJson.textContent = error.message;
-      }
-    }
-
-    function openPdfReport(url, title) {
-      reportViewerTitle.textContent = title;
-      reportViewerJson.hidden = true;
-      reportViewerFrame.hidden = false;
-      reportViewerFrame.src = url;
-      openReportViewer();
-    }
-
-    function wireReportActionButtons(scope) {
-      scope.querySelectorAll("[data-report-view-json]").forEach(function(button) {
-        button.addEventListener("click", function() {
-          if (button.classList.contains("is-disabled")) {
-            return;
-          }
-          openJsonReport(button.dataset.reportViewJson, button.dataset.reportTitle || "JSON report");
-        });
-      });
-
-      scope.querySelectorAll("[data-report-view-pdf]").forEach(function(button) {
-        button.addEventListener("click", function() {
-          if (button.classList.contains("is-disabled")) {
-            return;
-          }
-          openPdfReport(button.dataset.reportViewPdf, button.dataset.reportTitle || "PDF report");
-        });
-      });
-    }
-
-    function setLoadingState(repoName) {
-      modalTitle.textContent = repoName;
-      modalMeta.innerHTML = "";
-      modalDescription.textContent = "Loading repository details...";
-      modalReadme.textContent = "Loading README...";
-      modalLink.href = "#";
-    }
-
-    function renderMeta(details) {
-      const items = [
-        details.visibility,
-        "Language: " + details.language,
-        "Branch: " + details.default_branch,
-        "Stars: " + details.stargazers_count,
-        "Forks: " + details.forks_count,
-        "Issues: " + details.open_issues_count
-      ];
-
-      if (details.updated_at) {
-        items.push("Updated: " + new Date(details.updated_at).toLocaleDateString());
-      }
-
-      modalMeta.innerHTML = items.map(function(item) {
-        return '<span class="modal__meta-item">' + item + "</span>";
-      }).join("");
-    }
-
-    function setScanLoadingState(repoName) {
-      scanModalTitle.textContent = "Scanning " + repoName;
-      scanMeta.innerHTML = "";
-      scanSummary.textContent = "Cloning the repository locally and running the GVD scanner.";
-      scanFindings.innerHTML = '<p class="scan-empty">Scan in progress...</p>';
-      scanOutput.textContent = "Running cli/dist/cli.exe scan...";
-      scanViewJson.hidden = true;
-      scanViewPdf.hidden = true;
-      scanDownloadJson.hidden = true;
-      scanDownloadPdf.hidden = true;
-    }
-
-    function escapeHtml(value) {
-      return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#39;");
-    }
-
-    function renderScanMeta(result) {
-      const counts = result.severity_counts || {};
-      const items = [
-        "Local path: " + result.repo_path,
-        "Reports: " + result.scan_output_dir,
-        "Total findings: " + result.total_findings,
-        "Critical: " + (counts.CRITICAL || 0),
-        "High: " + (counts.HIGH || 0),
-        "Medium: " + (counts.MEDIUM || 0),
-        "Low: " + (counts.LOW || 0)
-      ];
-
-      scanMeta.innerHTML = items.map(function(item) {
-        return '<span class="modal__meta-item">' + escapeHtml(item) + "</span>";
-      }).join("");
-    }
-
-    function renderFindings(result) {
-      const findings = result.findings || [];
-      if (!findings.length) {
-        scanFindings.innerHTML = '<p class="scan-empty">No vulnerabilities were found in this repository.</p>';
-        return;
-      }
-
-      scanFindings.innerHTML = findings.map(function(finding) {
-        return [
-          '<article class="scan-finding">',
-          '<div class="scan-finding__header">',
-          '<span class="scan-finding__severity scan-finding__severity--' + escapeHtml((finding.severity || "").toLowerCase()) + '">' + escapeHtml(finding.severity || "Unknown") + '</span>',
-          '<span class="scan-finding__type">' + escapeHtml(finding.secret_type || "Unknown type") + '</span>',
-          '</div>',
-          '<p class="scan-finding__path">' + escapeHtml(finding.file_path || "Unknown file") + '</p>',
-          '<p class="scan-finding__meta">Commit: ' + escapeHtml(finding.commit_hash || "N/A") + (finding.line_number ? ' · Line: ' + escapeHtml(finding.line_number) : '') + '</p>',
-          '<p class="scan-finding__fix">' + escapeHtml(finding.fix_recommendation || "No recommendation provided.") + '</p>',
-          '</article>'
-        ].join("");
-      }).join("");
-    }
-
-    function setBulkLoadingState() {
-      bulkScanModalTitle.textContent = "Running full scan";
-      bulkScanMeta.innerHTML = "";
-      bulkScanSummary.textContent = "Cloning repositories locally and running the GVD scanner on each selected repository.";
-      bulkScanLog.textContent = "Waiting for bulk scan logs...";
-      bulkCurrentRepo.innerHTML = '<p class="scan-empty">No repository is running yet.</p>';
-      bulkPendingList.innerHTML = '<p class="scan-empty">Pending repositories will appear here.</p>';
-      bulkReportList.innerHTML = '<p class="scan-empty">Bulk scan in progress...</p>';
-      bulkFailureList.innerHTML = '<p class="scan-empty">No failures yet.</p>';
-      bulkSkippedList.innerHTML = '<p class="scan-empty">No skipped repositories.</p>';
-      bulkDownloadJson.href = "#";
-      bulkViewJson.dataset.reportViewJson = "";
-      bulkDownloadPdf.href = "#";
-      bulkViewPdf.dataset.reportViewPdf = "";
-      setActionState(bulkViewJson, false);
-      bulkDownloadJson.classList.add("is-disabled");
-      setActionState(bulkViewPdf, false);
-      bulkDownloadPdf.classList.add("is-disabled");
-      skipCurrentButton.classList.add("is-disabled");
-    }
-
-    function stopBulkScanPolling() {
-      if (bulkScanPollTimer) {
-        window.clearTimeout(bulkScanPollTimer);
-        bulkScanPollTimer = null;
-      }
-    }
-
-    function renderBulkMeta(result) {
-      const counts = result.severity_counts || {};
-      const items = [
-        "Visibility: " + (result.visibility || "both"),
-        "Repositories: " + result.total_repositories,
-        "Scanned: " + result.scanned_repositories,
-        "Failed: " + result.failed_repositories,
-        "Skipped: " + ((result.skipped_repositories || []).length || 0),
-        "Total findings: " + result.total_findings,
-        "Critical: " + (counts.CRITICAL || 0),
-        "High: " + (counts.HIGH || 0),
-        "Medium: " + (counts.MEDIUM || 0),
-        "Low: " + (counts.LOW || 0)
-      ];
-
-      bulkScanMeta.innerHTML = items.map(function(item) {
-        return '<span class="modal__meta-item">' + escapeHtml(item) + "</span>";
-      }).join("");
-    }
-
-    function renderBulkCurrentRepo(job) {
-      if (!job.current_repo || job.status !== "running") {
-        bulkCurrentRepo.innerHTML = '<p class="scan-empty">No repository is running right now.</p>';
-        skipCurrentButton.classList.add("is-disabled");
-        return;
-      }
-
-      skipCurrentButton.classList.remove("is-disabled");
-      bulkCurrentRepo.innerHTML = [
-        '<article class="bulk-report-item">',
-        '<div class="bulk-report-item__header">',
-        '<h4>' + escapeHtml(job.current_repo) + '</h4>',
-        '<span class="modal__meta-item">Running</span>',
-        '</div>',
-        '</article>'
-      ].join("");
-    }
-
-    function renderBulkPending(job) {
-      const pending = job.pending_repositories || [];
-      if (!pending.length) {
-        bulkPendingList.innerHTML = '<p class="scan-empty">No pending repositories.</p>';
-        return;
-      }
-
-      bulkPendingList.innerHTML = pending.map(function(repoKey) {
-        const parts = String(repoKey).split("/");
-        const owner = parts[0] || "";
-        const repo = parts.slice(1).join("/") || "";
-        return [
-          '<article class="bulk-report-item">',
-          '<div class="bulk-report-item__header">',
-          '<h4>' + escapeHtml(repoKey) + '</h4>',
-          '</div>',
-          '<div class="bulk-report-item__actions">',
-          '<button class="button button--secondary bulk-skip-button" type="button" data-owner="' + escapeHtml(owner) + '" data-repo="' + escapeHtml(repo) + '">Skip</button>',
-          '</div>',
-          '</article>'
-        ].join("");
-      }).join("");
-
-      bulkPendingList.querySelectorAll(".bulk-skip-button").forEach(function(button) {
-        button.addEventListener("click", function() {
-          requestBulkSkip(button.dataset.owner, button.dataset.repo);
-        });
-      });
-    }
-
-    function renderBulkRepositories(result) {
-      const repositories = result.repositories || [];
-      if (!repositories.length) {
-        bulkReportList.innerHTML = '<p class="scan-empty">No repositories were scanned successfully.</p>';
-        return;
-      }
-
-      bulkReportList.innerHTML = repositories.map(function(repo) {
-        const counts = repo.severity_counts || {};
-        const urls = repo.report_urls || {};
-        return [
-          '<article class="bulk-report-item">',
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+  function resetVisibilityFilter() {
+    const url = new URL(window.location.href);
+    url.searchParams.set('visibility', 'both');
+    window.location.href = url.toString();
+  }
+</script>
+{% endblock %}
           '<div class="bulk-report-item__header">',
           '<h4>' + escapeHtml(repo.owner + "/" + repo.repo_name) + '</h4>',
           '<span class="modal__meta-item">Findings: ' + escapeHtml(repo.total_findings) + '</span>',

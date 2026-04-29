@@ -5,7 +5,7 @@ import uuid
 import subprocess
 import requests
 import platform
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from textwrap import wrap
 
@@ -34,6 +34,51 @@ load_env()
 app = Flask(__name__)
 app.secret_key = os.environ["FLASK_SECRET_KEY"]
 BASE_DIR = Path(__file__).resolve().parent
+
+def timeago_filter(date_string):
+    """Convert a date string to a relative time format."""
+    if not date_string:
+        return "No recent activity"
+    
+    try:
+        # Parse the date string - GitHub API returns ISO 8601 format
+        if isinstance(date_string, str):
+            date_obj = datetime.fromisoformat(date_string.replace('Z', '+00:00'))
+        else:
+            date_obj = date_string
+        
+        # Convert to UTC for comparison
+        now = datetime.utcnow()
+        if date_obj.tzinfo:
+            date_obj = date_obj.astimezone().replace(tzinfo=None)
+        
+        delta = now - date_obj
+        seconds = delta.total_seconds()
+        
+        if seconds < 60:
+            return "just now"
+        elif seconds < 3600:
+            minutes = int(seconds / 60)
+            return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+        elif seconds < 86400:
+            hours = int(seconds / 3600)
+            return f"{hours} hour{'s' if hours != 1 else ''} ago"
+        elif seconds < 2592000:  # 30 days
+            days = int(seconds / 86400)
+            return f"{days} day{'s' if days != 1 else ''} ago"
+        elif seconds < 31536000:  # 365 days
+            months = int(seconds / 2592000)
+            return f"{months} month{'s' if months != 1 else ''} ago"
+        else:
+            years = int(seconds / 31536000)
+            return f"{years} year{'s' if years != 1 else ''} ago"
+    except (ValueError, TypeError, AttributeError):
+        return "Unknown time"
+
+# Register the custom filter
+app.jinja_env.filters['timeago'] = timeago_filter
+
+
 def get_gvd_executable():
     """Get the path to the GVD executable based on the operating system."""
     if platform.system() == "Windows":
@@ -875,6 +920,44 @@ def search():
         return jsonify({"error": "GitHub API error", "details": str(e)}), 500
     except Exception as e:
         return jsonify({"error": "Search failed", "details": str(e)}), 500
+
+
+@app.route("/scan-history")
+def scan_history():
+    token = session.get("access_token")
+    if not token:
+        return redirect(url_for("index"))
+    
+    # Get all scan reports from the scan_reports directory
+    scan_reports = []
+    if SCAN_REPORTS_DIR.exists():
+        for owner_dir in SCAN_REPORTS_DIR.iterdir():
+            if owner_dir.is_dir():
+                for repo_dir in owner_dir.iterdir():
+                    if repo_dir.is_dir():
+                        for scan_dir in repo_dir.iterdir():
+                            if scan_dir.is_dir():
+                                report_json = scan_dir / "report.json"
+                                if report_json.exists():
+                                    try:
+                                        with open(report_json, encoding="utf-8") as f:
+                                            report_data = json.load(f)
+                                            scan_reports.append({
+                                                "owner": owner_dir.name,
+                                                "repo_name": repo_dir.name,
+                                                "scan_id": scan_dir.name,
+                                                "scan_date": report_data.get("scan_date"),
+                                                "total_findings": report_data.get("total_findings", 0),
+                                                "severity_counts": report_data.get("severity_counts", {}),
+                                                "report_path": str(report_json.relative_to(BASE_DIR))
+                                            })
+                                    except (json.JSONDecodeError, IOError):
+                                        continue
+    
+    # Sort by scan date (newest first)
+    scan_reports.sort(key=lambda x: x.get("scan_date", ""), reverse=True)
+    
+    return render_template("scan_history.html", scan_reports=scan_reports)
 
 
 @app.route("/logout")

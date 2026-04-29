@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}Scan History - GVD{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/scan-history.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="scan-history-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-header-content">
+      <h1>Scan History</h1>
+      <p class="page-subtitle">View and manage your repository security scan history</p>
+    </div>
+    <div class="page-header-actions">
+      <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 8h10M8 3l5 5-5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Back to Dashboard
+      </a>
+    </div>
+  </div>
+
+  <!-- Scan History Content -->
+  {% if scan_reports %}
+  <div class="scan-history-grid">
+    {% for scan in scan_reports %}
+    <div class="scan-report-card">
+      <div class="scan-report-header">
+        <div class="scan-report-repo">
+          <h3>{{ scan.owner }}/{{ scan.repo_name }}</h3>
+          <span class="scan-date">{{ scan.scan_date or 'Unknown date' }}</span>
+        </div>
+        <div class="scan-report-status">
+          <span class="badge badge-success">Completed</span>
+        </div>
+      </div>
+      
+      <div class="scan-report-metrics">
+        <div class="metric-item">
+          <div class="metric-value">{{ scan.total_findings }}</div>
+          <div class="metric-label">Total Findings</div>
+        </div>
+        
+        {% set severity_counts = scan.severity_counts or {} %}
+        {% if severity_counts.CRITICAL %}
+        <div class="metric-item metric-item-critical">
+          <div class="metric-value">{{ severity_counts.CRITICAL }}</div>
+          <div class="metric-label">Critical</div>
+        </div>
+        {% endif %}
+        
+        {% if severity_counts.HIGH %}
+        <div class="metric-item metric-item-high">
+          <div class="metric-value">{{ severity_counts.HIGH }}</div>
+          <div class="metric-label">High</div>
+        </div>
+        {% endif %}
+        
+        {% if severity_counts.MEDIUM %}
+        <div class="metric-item metric-item-medium">
+          <div class="metric-value">{{ severity_counts.MEDIUM }}</div>
+          <div class="metric-label">Medium</div>
+        </div>
+        {% endif %}
+        
+        {% if severity_counts.LOW %}
+        <div class="metric-item metric-item-low">
+          <div class="metric-value">{{ severity_counts.LOW }}</div>
+          <div class="metric-label">Low</div>
+        </div>
+        {% endif %}
+      </div>
+      
+      <div class="scan-report-actions">
+        <a href="{{ url_for('repo_report', owner=scan.owner, repo_name=scan.repo_name, scan_id=scan.scan_id, file_format='json') }}" 
+           class="btn btn-ghost btn-sm" target="_blank">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 10v4H2v-4M8 2v8M4 6l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          View JSON
+        </a>
+        
+        <a href="{{ url_for('repo_report', owner=scan.owner, repo_name=scan.repo_name, scan_id=scan.scan_id, file_format='pdf') }}" 
+           class="btn btn-ghost btn-sm" target="_blank">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 10v4H2v-4M8 2v8M4 6l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          View PDF
+        </a>
+        
+        <a href="{{ url_for('repo_report', owner=scan.owner, repo_name=scan.repo_name, scan_id=scan.scan_id, file_format='json') }}?download=1" 
+           class="btn btn-secondary btn-sm">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M14 10v4H2v-4M8 2v8M4 6l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Download
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <!-- No Scan History -->
+  <div class="empty-state">
+    <div class="empty-state-content">
+      <div class="empty-state-icon">
+        <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M32 8L16 20v24l16 12 16-12V20l-16-12z" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M24 28l4 4 8-8" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <h2>No Scan History</h2>
+      <p class="empty-state-description">
+        You haven't run any security scans yet. Start by scanning your repositories to see your scan history here.
+      </p>
+      <div class="empty-state-actions">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 2v6M4 6l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Start Scanning
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

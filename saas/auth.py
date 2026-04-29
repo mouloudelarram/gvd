@@ -45,4 +45,6 @@ def get_github_user(token):
     return {
         "login": data.get("login"),
         "name": data.get("name"),
+        "avatar_url": data.get("avatar_url"),
+        "email": data.get("email"),
     }

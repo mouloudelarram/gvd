@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}GVD - GitHub Vulnerability Detector{% endblock %}</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="app-shell">
+  <a href="#main-content" class="skip-to-content">Skip to main content</a>
+  
+  <!-- Professional Header -->
+  <header class="app-header" role="banner">
+    <div class="header-container">
+      <div class="header-left">
+        <div class="brand">
+          <div class="brand-logo">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="32" height="32" rx="6" fill="var(--color-accent)"/>
+              <path d="M16 6L10 11V21L16 26L22 21V11L16 6Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M13 15L14.5 16.5L19 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <h1 class="brand-name">GVD</h1>
+        </div>
+      </div>
+      
+      <div class="header-center">
+        {% block header_search %}
+        <div class="search-container">
+          <input type="text" id="global-search" placeholder="Search repositories..." autocomplete="off" class="search-input">
+          <div class="search-icon">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7.333 12.667A5.333 5.333 0 1 0 7.333 2a5.333 5.333 0 0 0 0 10.667ZM14 14l-2.9-2.9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </div>
+        {% endblock %}
+      </div>
+      
+      <div class="header-right">
+        {% block header_actions %}
+        <div class="header-actions">
+          <button class="btn btn-ghost btn-sm" id="notifications-btn" aria-label="Notifications">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M8 2a4 4 0 0 0-4 4v3c0 .5-.2 1-.5 1.5L2 12h12l-1.5-1.5C12 10 12 9.5 12 9V6a4 4 0 0 0-4-4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M6.5 14a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          
+          <div class="dropdown">
+            <button class="btn btn-ghost btn-sm dropdown-toggle" id="user-dropdown-toggle" aria-label="User menu">
+              <div class="user-avatar">
+                <img src="{{ user.avatar_url or '#' }}" alt="{{ user.name or user.login }}" width="24" height="24">
+              </div>
+              <span class="user-name">{{ user.name or user.login }}</span>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            
+            <div class="dropdown-menu" id="user-dropdown">
+              <div class="dropdown-header">
+                <div class="dropdown-user-info">
+                  <div class="dropdown-user-avatar">
+                    <img src="{{ user.avatar_url or '#' }}" alt="{{ user.name or user.login }}" width="32" height="32">
+                  </div>
+                  <div class="dropdown-user-details">
+                    <div class="dropdown-user-name">{{ user.name or user.login }}</div>
+                    <div class="dropdown-user-email">{{ user.email or '' }}</div>
+                  </div>
+                </div>
+              </div>
+              <div class="dropdown-divider"></div>
+              <a href="{{ url_for('scan_history') }}" class="dropdown-item">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 3h14M1 7h10M1 11h6M11 11l2 2 2-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Scan History
+              </a>
+              <a href="#" class="dropdown-item">Settings</a>
+              <a href="#" class="dropdown-item">Help & Support</a>
+              <div class="dropdown-divider"></div>
+              <a href="{{ url_for('logout') }}" class="dropdown-item dropdown-item-danger">Sign out</a>
+            </div>
+          </div>
+        </div>
+        {% endblock %}
+      </div>
+    </div>
+  </header>
+  
+  <!-- Main Content Area -->
+  <main class="app-main" id="main-content" role="main">
+    {% block content %}{% endblock %}
+  </main>
+  
+  <!-- Footer -->
+  <footer class="app-footer" role="contentinfo">
+    <div class="footer-container">
+      <div class="footer-left">
+        <p>&copy; 2024 GVD. Built for developers who value security.</p>
+      </div>
+      <div class="footer-right">
+        <a href="#" class="footer-link">Documentation</a>
+        <a href="#" class="footer-link">Privacy</a>
+        <a href="#" class="footer-link">Terms</a>
+        <a href="#" class="footer-link">Support</a>
+      </div>
+    </div>
+  </footer>
+  
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+  
+  <!-- Scripts -->
+  <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
