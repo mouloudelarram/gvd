@@ -19,6 +19,22 @@
   background-color: rgba(255, 255, 255, 0.95);
 }
 
+/* Header Actions - Fix clickability */
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  position: relative;
+  z-index: var(--z-dropdown);
+}
+
+/* Ensure all header buttons are clickable */
+.header-actions .btn {
+  position: relative;
+  z-index: var(--z-dropdown);
+  pointer-events: auto;
+}
+
 .header-container {
   display: flex;
   align-items: center;
@@ -122,13 +138,6 @@
   pointer-events: none;
 }
 
-/* Header Actions */
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: var(--space-3);
-}
-
 .user-avatar {
   width: 32px;
   height: 32px;
@@ -155,6 +164,9 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  position: relative;
+  z-index: var(--z-dropdown);
+  cursor: pointer;
 }
 
 /* Main Content */

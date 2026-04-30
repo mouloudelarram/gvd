@@ -128,70 +128,74 @@
   </div>
   {% endif %}
 
-  <!-- Repository Grid -->
-  <div class="repository-section">
+  <!-- Repository Section -->
+  <section class="repository-section" aria-labelledby="repository-heading">
     {% if displayed_repos %}
-    <div class="repo-grid" aria-label="Repository list">
+    <div class="repo-grid" role="grid" aria-label="Repository grid">
       {% for repo in displayed_repos %}
-      <article class="repo-card" data-visibility="{{ repo.visibility }}">
-        <div class="repo-card-header">
+      <article class="repo-card" data-visibility="{{ repo.visibility }}" role="gridcell">
+        <header class="repo-card-header">
           <div class="repo-info">
             <h3 class="repo-name">
-              <a href="{{ repo.html_url or '#' }}" target="_blank" rel="noopener noreferrer">{{ repo.name }}</a>
+              <a href="{{ repo.html_url or '#' }}" target="_blank" rel="noopener noreferrer" 
+                 aria-describedby="repo-{{ repo.name }}-meta">{{ repo.name }}</a>
             </h3>
-            <div class="repo-meta">
-              <span class="badge badge-{{ repo.visibility }}">{{ repo.visibility }}</span>
+            <div class="repo-meta" id="repo-{{ repo.name }}-meta">
+              <span class="badge badge-{{ repo.visibility }}" role="status">{{ repo.visibility }}</span>
               {% if repo.language %}
               <span class="repo-language">{{ repo.language }}</span>
               {% endif %}
             </div>
           </div>
-          <div class="repo-stats">
+          <div class="repo-stats" role="group" aria-label="Repository statistics">
             {% if repo.stargazers_count %}
             <div class="stat-item">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path d="M7 2l1.5 3L12 6l-2.5 2L10 11l-3-2-3 2 0.5-3L2 6l3.5-1L7 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              <span>{{ repo.stargazers_count }}</span>
+              <span aria-label="{{ repo.stargazers_count }} stars">{{ repo.stargazers_count }}</span>
             </div>
             {% endif %}
             {% if repo.forks_count %}
             <div class="stat-item">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <path d="M3 3h3v3H3zM8 3h3v3H8zM3 8h3v3H3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
                 <path d="M6 6h2M6 11h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
-              <span>{{ repo.forks_count }}</span>
+              <span aria-label="{{ repo.forks_count }} forks">{{ repo.forks_count }}</span>
             </div>
             {% endif %}
           </div>
-        </div>
+        </header>
         
         <div class="repo-card-body">
           <p class="repo-description">
-            {{ repo.description or "No description provided." }}
+            {{ repo.description | escape or "No description provided." }}
           </p>
           
-          <div class="repo-updated">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <div class="repo-updated" role="status">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <path d="M6 1v3M6 8v3M3 6h3M8 6h1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            {% if repo.updated_at %}
-            <span>Updated {{ repo.updated_at|timeago }}</span>
-            {% else %}
-            <span>No recent activity</span>
-            {% endif %}
+            <time datetime="{{ repo.updated_at or '' }}">
+              {% if repo.updated_at %}
+              Updated {{ repo.updated_at|timeago }}
+              {% else %}
+              No recent activity
+              {% endif %}
+            </time>
           </div>
         </div>
         
-        <div class="repo-card-footer">
+        <footer class="repo-card-footer">
           <button
             class="btn btn-ghost btn-sm repo-details-btn"
             type="button"
             data-owner="{{ repo.owner.login }}"
             data-repo="{{ repo.name }}"
+            aria-label="View details for {{ repo.name }}"
           >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <path d="M7 2C7 2 5 4 5 6C5 8 7 10 7 10C7 10 9 8 9 6C9 4 7 2 7 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M7 10v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M4 12h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -205,14 +209,15 @@
             data-owner="{{ repo.owner.login }}"
             data-repo="{{ repo.name }}"
             data-repo-url="{{ repo.clone_url }}"
+            aria-label="Scan {{ repo.name }} for vulnerabilities"
           >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
               <path d="M7 1v3M7 10v3M3 7h3M10 7h1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
               <circle cx="7" cy="7" r="1" fill="currentColor"/>
             </svg>
             Scan
           </button>
-        </div>
+        </footer>
       </article>
       {% endfor %}
     </div>
@@ -331,7 +336,7 @@
   <div class="modal modal-large">
     <div class="modal-header">
       <h2 class="modal-title" id="report-viewer-title">Report Viewer</h2>
-      <button class="btn btn-ghost btn-sm" data-close-modal="true">
+      <button class="modal-close" data-close-modal="true" aria-label="Close modal">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>

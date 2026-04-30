@@ -44,26 +44,74 @@ window.GVD.dashboard = {
     // Scan all button
     const scanAllBtn = document.getElementById('scan-all-button');
     if (scanAllBtn) {
-      scanAllBtn.addEventListener('click', this.handleScanAll.bind(this));
+      scanAllBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.handleScanAll();
+      });
     }
 
-    // Repository detail buttons
-    document.addEventListener('click', (e) => {
-      if (e.target.closest('.repo-details-btn')) {
-        this.handleRepoDetails(e.target.closest('.repo-details-btn'));
-      }
-      if (e.target.closest('.repo-scan-btn')) {
-        this.handleRepoScan(e.target.closest('.repo-scan-btn'));
-      }
+    // Repository detail buttons - direct binding for reliability
+    const detailButtons = document.querySelectorAll('.repo-details-btn');
+    detailButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.handleRepoDetails(button);
+      });
     });
 
-    // Modal close handlers
+    // Repository scan buttons - direct binding for reliability
+    const scanButtons = document.querySelectorAll('.repo-scan-btn');
+    scanButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.handleRepoScan(button);
+      });
+    });
+
+    // Report view buttons - NEW
+    const reportButtons = document.querySelectorAll('.report-view-btn, [data-report-url]');
+    reportButtons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const reportUrl = button.dataset.reportUrl || button.getAttribute('href');
+        const reportTitle = button.dataset.reportTitle || 'Report';
+        const reportType = button.dataset.reportType || 'json';
+        
+        if (reportUrl) {
+          if (reportType === 'pdf') {
+            this.openPdfReport(reportUrl, reportTitle);
+          } else {
+            this.openJsonReport(reportUrl, reportTitle);
+          }
+        }
+      });
+    });
+
+    // Modal close handlers - IMPROVED
     document.addEventListener('click', (e) => {
-      if (e.target.dataset.closeModal) {
-        window.GVD.modal.close('repo-modal');
+      // Handle modal close buttons
+      if (e.target.dataset.closeModal || e.target.closest('[data-close-modal]')) {
+        e.preventDefault();
+        const modal = e.target.closest('.modal-overlay');
+        if (modal) {
+          window.GVD.modal.close(modal.id);
+        }
       }
-      if (e.target.dataset.closeScanModal) {
-        window.GVD.modal.close('scan-modal');
+      // Handle scan modal close buttons
+      if (e.target.dataset.closeScanModal || e.target.closest('[data-close-scan-modal]')) {
+        e.preventDefault();
+        const modal = e.target.closest('.modal-overlay');
+        if (modal) {
+          window.GVD.modal.close(modal.id);
+        }
+      }
+      // Handle click on modal backdrop
+      if (e.target.classList.contains('modal-overlay')) {
+        window.GVD.modal.close(e.target.id);
       }
     });
 
@@ -78,6 +126,19 @@ window.GVD.dashboard = {
     document.addEventListener('click', (e) => {
       if (!e.target.closest('.search-wrapper')) {
         this.hideSearchResults();
+      }
+    });
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        // Close any open modal
+        const openModal = document.querySelector('.modal-overlay:not([hidden])');
+        if (openModal) {
+          window.GVD.modal.close(openModal.id);
+        }
+        // Close any open dropdowns
+        window.GVD.dropdown.closeAll();
       }
     });
   },
@@ -690,11 +751,194 @@ window.GVD.dashboard = {
   },
 
   /**
-   * Open PDF report
+   * Open PDF report in modal
    */
-  openPdfReport: function(url, title) {
-    // Open PDF in new window
-    window.open(url, '_blank');
+  openPdfReport: async function(url, title) {
+    try {
+      window.GVD.modal.open('report-viewer-modal');
+      const reportTitle = document.getElementById('report-viewer-title');
+      const reportContent = document.getElementById('report-content');
+      
+      if (reportTitle) {
+        reportTitle.textContent = title || 'PDF Report';
+      }
+      
+      if (reportContent) {
+        // Show loading state
+        reportContent.innerHTML = `
+          <div class="pdf-loading">
+            <div class="pdf-loading-spinner"></div>
+            <p>Loading PDF report...</p>
+          </div>
+        `;
+        
+        // First verify the PDF URL is accessible
+        try {
+          const response = await fetch(url, { method: 'HEAD' });
+          if (!response.ok) {
+            throw new Error(`PDF not accessible: ${response.status}`);
+          }
+          
+          // Check if it's actually a PDF
+          const contentType = response.headers.get('content-type');
+          if (!contentType || !contentType.includes('application/pdf')) {
+            throw new Error('URL does not point to a PDF file');
+          }
+        } catch (verifyError) {
+          console.error('PDF verification failed:', verifyError);
+          reportContent.innerHTML = `
+            <div class="pdf-error">
+              <h3>PDF Not Found</h3>
+              <p>The PDF report could not be found or accessed.</p>
+              <p><strong>Error:</strong> ${verifyError.message}</p>
+              <div class="pdf-error-actions">
+                <a href="${url}" target="_blank" class="btn btn-primary">
+                  Try Opening in New Tab
+                </a>
+                <button class="btn btn-secondary" onclick="window.GVD.modal.close('report-viewer-modal')">
+                  Close
+                </button>
+              </div>
+            </div>
+          `;
+          return;
+        }
+        
+        // Create multiple PDF viewer options for better compatibility
+        const createPdfViewer = () => {
+          const container = document.createElement('div');
+          container.className = 'pdf-viewer-container';
+          container.style.cssText = `
+            width: 100%;
+            height: 70vh;
+            display: flex;
+            flex-direction: column;
+          `;
+          
+          // Try iframe first
+          const iframe = document.createElement('iframe');
+          iframe.src = url;
+          iframe.className = 'pdf-viewer-iframe';
+          iframe.style.cssText = `
+            width: 100%;
+            height: 100%;
+            border: 1px solid var(--color-border-primary);
+            border-radius: var(--radius-lg);
+            background: white;
+          `;
+          
+          // Add error handling to iframe
+          iframe.onerror = () => {
+            console.warn('Iframe PDF loading failed, trying embed');
+            createEmbedViewer();
+          };
+          
+          container.appendChild(iframe);
+          return container;
+        };
+        
+        const createEmbedViewer = () => {
+          const embed = document.createElement('embed');
+          embed.src = url;
+          embed.type = 'application/pdf';
+          embed.className = 'pdf-viewer-embed';
+          embed.style.cssText = `
+            width: 100%;
+            height: 70vh;
+            border: 1px solid var(--color-border-primary);
+            border-radius: var(--radius-lg);
+            background: white;
+          `;
+          
+          reportContent.innerHTML = '';
+          reportContent.appendChild(embed);
+        };
+        
+        const createObjectViewer = () => {
+          const object = document.createElement('object');
+          object.data = url;
+          object.type = 'application/pdf';
+          object.className = 'pdf-viewer-object';
+          object.style.cssText = `
+            width: 100%;
+            height: 70vh;
+            border: 1px solid var(--color-border-primary);
+            border-radius: var(--radius-lg);
+            background: white;
+          `;
+          
+          // Fallback content for object
+          object.innerHTML = `
+            <div class="pdf-error">
+              <h3>PDF Viewer Not Supported</h3>
+              <p>Your browser doesn't support PDF viewing.</p>
+              <div class="pdf-error-actions">
+                <a href="${url}" target="_blank" class="btn btn-primary">
+                  Open PDF in New Tab
+                </a>
+                <a href="${url}" download class="btn btn-secondary">
+                  Download PDF
+                </a>
+              </div>
+            </div>
+          `;
+          
+          reportContent.innerHTML = '';
+          reportContent.appendChild(object);
+        };
+        
+        // Try iframe first, then fallback to embed, then object
+        const pdfViewer = createPdfViewer();
+        
+        // Set a timeout to check if iframe loaded
+        const checkIframeLoaded = () => {
+          const iframe = pdfViewer.querySelector('iframe');
+          if (iframe && !iframe.contentDocument && !iframe.contentWindow) {
+            console.warn('Iframe failed to load, trying embed viewer');
+            createEmbedViewer();
+          }
+        };
+        
+        // Replace loading state with viewer
+        setTimeout(() => {
+          if (reportContent.querySelector('.pdf-loading')) {
+            reportContent.innerHTML = '';
+            reportContent.appendChild(pdfViewer);
+            
+            // Check iframe loading after a delay
+            setTimeout(checkIframeLoaded, 2000);
+          }
+        }, 1000);
+        
+        // Final fallback to object if everything fails
+        setTimeout(() => {
+          if (reportContent.querySelector('.pdf-loading')) {
+            console.warn('All viewers failed, using object fallback');
+            createObjectViewer();
+          }
+        }, 5000);
+      }
+    } catch (error) {
+      console.error('Failed to load PDF report:', error);
+      window.GVD.toast.show('Failed to load PDF report', 'error');
+      
+      // Show error in modal
+      const reportContent = document.getElementById('report-content');
+      if (reportContent) {
+        reportContent.innerHTML = `
+          <div class="pdf-error">
+            <h3>PDF Loading Error</h3>
+            <p>An error occurred while loading the PDF report.</p>
+            <p><strong>Error:</strong> ${error.message}</p>
+            <div class="pdf-error-actions">
+              <button class="btn btn-secondary" onclick="window.GVD.modal.close('report-viewer-modal')">
+                Close
+              </button>
+            </div>
+          </div>
+        `;
+      }
+    }
   }
 };
 

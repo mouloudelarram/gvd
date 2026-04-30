@@ -103,17 +103,24 @@ window.GVD = {
      */
     open: function(modalId) {
       const modal = document.getElementById(modalId);
-      if (!modal) return;
+      if (!modal) {
+        console.warn(`Modal with ID "${modalId}" not found`);
+        return;
+      }
       
+      // Show modal
       modal.hidden = false;
+      modal.style.display = 'flex';
       document.body.classList.add('modal-open');
       window.GVD.state.modals[modalId] = true;
       
       // Focus management
-      const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
-      if (focusableElements.length > 0) {
-        focusableElements[0].focus();
-      }
+      setTimeout(() => {
+        const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        if (focusableElements.length > 0) {
+          focusableElements[0].focus();
+        }
+      }, 100);
       
       // Add event listeners
       this.addEventListeners(modalId);
@@ -127,6 +134,7 @@ window.GVD = {
       if (!modal) return;
       
       modal.hidden = true;
+      modal.style.display = 'none';
       document.body.classList.remove('modal-open');
       window.GVD.state.modals[modalId] = false;
       
@@ -243,16 +251,34 @@ window.GVD = {
      * Toggle dropdown
      */
     toggle: function(dropdownId) {
-      const dropdown = document.getElementById(dropdownId);
-      if (!dropdown) return;
+      // Try to find by ID first
+      let dropdown = document.getElementById(dropdownId);
+      
+      // If not found, try to find by class or as menu
+      if (!dropdown) {
+        dropdown = document.querySelector(`#${dropdownId}, .dropdown-menu#${dropdownId}, .dropdown[id="${dropdownId}"]`);
+      }
+      
+      if (!dropdown) {
+        return;
+      }
 
-      const isOpen = dropdown.classList.contains('open');
+      // Check if we're dealing with the menu or the container
+      const isMenu = dropdown.classList.contains('dropdown-menu');
+      const dropdownContainer = isMenu ? dropdown.closest('.dropdown') : dropdown;
+      
+      if (!dropdownContainer) {
+        return;
+      }
+      
+      const isOpen = dropdownContainer.classList.contains('open');
       
       // Close all other dropdowns
       this.closeAll();
       
       if (!isOpen) {
-        dropdown.classList.add('open');
+        dropdownContainer.classList.add('open');
+        
         // Add a small delay before adding the outside click listener
         setTimeout(() => {
           document.addEventListener('click', this.handleOutsideClick);
@@ -310,16 +336,31 @@ window.GVD = {
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
-  // Initialize dropdowns
+  // Initialize dropdowns - FIXED VERSION
   document.querySelectorAll('.dropdown-toggle').forEach(toggle => {
     toggle.addEventListener('click', function(e) {
       e.preventDefault();
+      e.stopPropagation();
       const dropdown = this.closest('.dropdown');
       if (dropdown) {
-        window.GVD.dropdown.toggle(dropdown.id);
+        // Use the dropdown's ID or generate one
+        const dropdownId = dropdown.id || `dropdown-${Date.now()}`;
+        dropdown.id = dropdownId;
+        window.GVD.dropdown.toggle(dropdownId);
       }
     });
   });
+
+  // Initialize notifications button
+  const notificationsBtn = document.getElementById('notifications-btn');
+  if (notificationsBtn) {
+    notificationsBtn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      // For now, just show a toast that notifications are coming soon
+      window.GVD.toast.show('Notifications coming soon!', 'info');
+    });
+  }
 
   // Initialize modal close buttons
   document.querySelectorAll('[data-close-modal]').forEach(button => {
@@ -341,36 +382,106 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   });
 
-  // Initialize user dropdown
+  // Initialize user dropdown - SPECIFIC HANDLER
   const userDropdownToggle = document.getElementById('user-dropdown-toggle');
   if (userDropdownToggle) {
     userDropdownToggle.addEventListener('click', function(e) {
       e.preventDefault();
       e.stopPropagation();
-      window.GVD.dropdown.toggle('user-dropdown');
+      
+      // Find the parent dropdown
+      const dropdown = this.closest('.dropdown');
+      if (dropdown) {
+        // Ensure the dropdown menu has an ID
+        const dropdownMenu = dropdown.querySelector('.dropdown-menu');
+        if (dropdownMenu) {
+          const menuId = dropdownMenu.id || 'user-dropdown';
+          dropdownMenu.id = menuId;
+          window.GVD.dropdown.toggle(menuId);
+        }
+      }
     });
   }
 
-  // Initialize logout link
+  // Initialize logout link - FIXED HANDLER
   const logoutLink = document.querySelector('a[href*="logout"]');
   if (logoutLink) {
     logoutLink.addEventListener('click', function(e) {
-      // Allow the link to work normally, just close any open dropdowns
+      // Close any open dropdowns first
       window.GVD.dropdown.closeAll();
+      
+      // Allow the link to work normally
+      // The browser will handle the navigation
     });
   }
 
   // Global error handler
   window.addEventListener('error', function(e) {
     console.error('Global error:', e.error);
-    window.GVD.toast.show('An unexpected error occurred', 'error');
+    
+    // Only show toast for user-facing errors, not for development/debug errors
+    if (e.error && e.error.name !== 'ChunkLoadError' && !e.error.message.includes('Network')) {
+      window.GVD.toast.show('An unexpected error occurred', 'error');
+    }
+    
+    // Log to service in production
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      // In production, you might want to send errors to a logging service
+      // logErrorToService(e.error);
+    }
   });
 
   // Global unhandled promise rejection handler
   window.addEventListener('unhandledrejection', function(e) {
     console.error('Unhandled promise rejection:', e.reason);
-    window.GVD.toast.show('An unexpected error occurred', 'error');
+    
+    // Prevent default browser behavior
+    e.preventDefault();
+    
+    // Only show toast for user-facing rejections
+    if (e.reason && typeof e.reason === 'object' && e.reason.name !== 'AbortError') {
+      window.GVD.toast.show('A request failed', 'error');
+    }
+    
+    // Log to service in production
+    if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      // logErrorToService(e.reason);
+    }
   });
+
+  // Console cleanup for production
+  if (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    // Override console methods in production to reduce noise
+    const originalConsole = {
+      log: console.log,
+      info: console.info,
+      warn: console.warn,
+      error: console.error
+    };
+    
+    console.log = function(...args) {
+      // Only allow specific log messages in production
+      if (args[0] && typeof args[0] === 'string' && 
+          (args[0].includes('GVD') || args[0].includes('User') || args[0].includes('Error'))) {
+        originalConsole.log.apply(console, args);
+      }
+    };
+    
+    console.info = function(...args) {
+      if (args[0] && typeof args[0] === 'string' && args[0].includes('GVD')) {
+        originalConsole.info.apply(console, args);
+      }
+    };
+    
+    console.warn = function(...args) {
+      if (args[0] && typeof args[0] === 'string' && args[0].includes('GVD')) {
+        originalConsole.warn.apply(console, args);
+      }
+    };
+    
+    // Keep error logging for debugging
+    console.error = originalConsole.error;
+  }
 });
 
 // Add CSS animations

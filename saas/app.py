@@ -1,38 +1,80 @@
 import os
 import json
+import logging
 import threading
 import uuid
 import subprocess
 import requests
 import platform
+import secrets
 from datetime import datetime, timedelta
 from pathlib import Path
 from textwrap import wrap
 
-from flask import Flask, abort, jsonify, redirect, render_template, request, send_file, session, url_for
+from flask import Flask, abort, flash, jsonify, redirect, render_template, request, send_file, session, url_for
+from markupsafe import escape
 
-from auth import get_github_auth_url, get_github_token, get_github_user
+from auth import get_github_auth_url, get_github_token, get_github_user, validate_oauth_state
 from clone import clone_repos, ensure_repo_cloned
 from github import get_repo_details, get_repos, search_repos
+from config import generate_csrf_token, setup_error_handlers, require_login
 
 
 def load_env():
+    """Load environment variables from .env file."""
     env_path = os.path.join(os.path.dirname(__file__), ".env")
     if not os.path.exists(env_path):
+        print(f"Warning: .env file not found at {env_path}")
         return
-    with open(env_path, encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith("#") or "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            os.environ.setdefault(key.strip(), value.strip())
+    try:
+        with open(env_path, encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                key, value = line.split("=", 1)
+                os.environ.setdefault(key.strip(), value.strip())
+    except IOError as e:
+        print(f"Error reading .env file: {e}")
 
 
 load_env()
 
+# Validate required environment variables
+required_env_vars = ["GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET", "FLASK_SECRET_KEY"]
+missing_vars = [var for var in required_env_vars if not os.environ.get(var)]
+if missing_vars:
+    raise RuntimeError(f"Missing required environment variables: {', '.join(missing_vars)}. Please check your .env file.")
+
 app = Flask(__name__)
 app.secret_key = os.environ["FLASK_SECRET_KEY"]
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Security configuration for session cookies
+app.config.update(
+    SESSION_COOKIE_SECURE=True,  # Only send over HTTPS
+    SESSION_COOKIE_HTTPONLY=True,  # No JavaScript access
+    SESSION_COOKIE_SAMESITE='Lax',  # CSRF protection
+    SESSION_COOKIE_NAME='gvd_session',
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=24),
+    MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16MB max request size
+)
+
+# Setup error handlers
+setup_error_handlers(app)
+
+# Register CSRF token generation for all templates
+@app.before_request
+def before_request():
+    """Generate CSRF token for forms before each request."""
+    generate_csrf_token()
+
 BASE_DIR = Path(__file__).resolve().parent
 
 def timeago_filter(date_string):
@@ -81,10 +123,20 @@ app.jinja_env.filters['timeago'] = timeago_filter
 
 def get_gvd_executable():
     """Get the path to the GVD executable based on the operating system."""
+    # For development, use the Python script directly
+    # In production, this should be the compiled executable
+    cli_script = BASE_DIR.parent / "cli" / "cli.py"
+    if cli_script.exists():
+        return cli_script
+    
+    # Fallback to compiled executable if available
+    dist_dir = BASE_DIR.parent / "cli" / "dist"
     if platform.system() == "Windows":
-        return BASE_DIR.parent / "cli" / "dist" / "cli.exe"
+        exe_path = dist_dir / "cli.exe"
     else:
-        return BASE_DIR.parent / "cli" / "dist" / "cli"
+        exe_path = dist_dir / "cli"
+    
+    return exe_path if exe_path.exists() else cli_script
 
 CLI_EXE = get_gvd_executable()
 SCAN_REPORTS_DIR = BASE_DIR / "scan_reports"
@@ -118,10 +170,32 @@ def login():
 
 @app.route("/callback")
 def callback():
-    token = get_github_token()
-    session["access_token"] = token
-    session["user"] = get_github_user(token)
-    return redirect(url_for("dashboard"))
+    """Handle GitHub OAuth callback."""
+    try:
+        token = get_github_token()
+        user = get_github_user(token)
+        session["access_token"] = token
+        session["user"] = user
+        session.permanent = True
+        return redirect(url_for("dashboard"))
+    except ValueError as e:
+        # OAuth validation error (CSRF, invalid code, etc.)
+        return render_template("error.html",
+                             status=400,
+                             message="Authentication Error",
+                             detail=str(e)), 400
+    except RuntimeError as e:
+        # GitHub API error
+        return render_template("error.html",
+                             status=500,
+                             message="GitHub Connection Error",
+                             detail="Could not connect to GitHub. Please try again later."), 500
+    except Exception as e:
+        # Unexpected error
+        return render_template("error.html",
+                             status=500,
+                             message="Internal Server Error",
+                             detail="An unexpected error occurred during authentication."), 500
 
 
 @app.route("/dashboard")
@@ -132,15 +206,25 @@ def dashboard():
     visibility = (request.args.get("visibility") or "both").strip().lower()
     if visibility not in {"public", "private", "both"}:
         visibility = "both"
-    repos = get_repos(token)
+    
+    try:
+        repos = get_repos(token)
+    except Exception as e:
+        return render_template("error.html",
+                             status=500,
+                             message="GitHub API Error",
+                             detail="Failed to fetch repositories from GitHub."), 500
+    
     if visibility != "both":
         repos = [repo for repo in repos if repo.get("visibility") == visibility]
+    
     return render_template(
         "dashboard.html",
         user=session.get("user"),
         repos=repos,
         current_visibility=visibility,
         message=session.pop("message", None),
+        csrf_token=generate_csrf_token(),
     )
 
 
@@ -154,6 +238,9 @@ def clone():
     clone_repos(repos, token)
     session["message"] = f"Processed {len(repos)} repos."
     return redirect(url_for("dashboard"))
+
+
+
 
 
 def build_scan_result(report_data, owner, repo_name, repo_path, scan_output_dir, command_output):
@@ -284,16 +371,30 @@ def build_repo_pdf_lines(scan_result):
 
 
 def execute_scan_command(repo_path, scan_output_dir, job_id=None, repo_key=None):
-    command = [
-        str(CLI_EXE),
-        "scan",
-        "--path",
-        str(repo_path),
-        "--output",
+    # Build command based on whether CLI_EXE is a Python script or executable
+    if CLI_EXE.suffix == '.py':
+        command = [
+            "python",
+            str(CLI_EXE),
+            "scan",
+            "--path",
+            str(repo_path),
+            "--output",
         str(scan_output_dir),
-        "--format",
-        "json",
-    ]
+            "--format",
+            "json",
+        ]
+    else:
+        command = [
+            str(CLI_EXE),
+            "scan",
+            "--path",
+            str(repo_path),
+            "--output",
+            str(scan_output_dir),
+            "--format",
+            "json",
+        ]
 
     process = subprocess.Popen(
         command,
@@ -707,41 +808,96 @@ def run_bulk_scan_job(job_id, repos, token, visibility):
 def scan():
     token = session.get("access_token")
     if not token:
+        app.logger.warning("Scan attempt without access token")
         return jsonify({"error": "Unauthorized"}), 401
 
-    payload = request.get_json(silent=True) or request.form
-    repo_url = (payload.get("repo_url") or "").strip()
-    owner = (payload.get("owner") or "").strip()
-    repo_name = (payload.get("repo_name") or "").strip()
+    # Validate request data
+    try:
+        payload = request.get_json(silent=True) or request.form
+        if not payload:
+            return jsonify({"error": "Invalid request format"}), 400
+            
+        repo_url = (payload.get("repo_url") or "").strip()
+        owner = (payload.get("owner") or "").strip()
+        repo_name = (payload.get("repo_name") or "").strip()
 
-    if not repo_url or not owner or not repo_name:
-        return jsonify({"error": "Missing repository data."}), 400
+        # Validate required fields
+        if not repo_url or not owner or not repo_name:
+            return jsonify({
+                "error": "Missing repository data.",
+                "details": "repo_url, owner, and repo_name are required"
+            }), 400
 
-    repo = next(
-        (
-            item for item in get_repos(token)
-            if item.get("clone_url") == repo_url
-            and (item.get("owner") or {}).get("login") == owner
-            and item.get("name") == repo_name
-        ),
-        None,
-    )
-    if not repo:
-        return jsonify({"error": "Repository not found."}), 404
+        # Sanitize inputs to prevent path traversal
+        owner = Path(owner).name
+        repo_name = Path(repo_name).name
+        
+        if len(owner) > 100 or len(repo_name) > 100:
+            return jsonify({"error": "Invalid repository name length"}), 400
 
+    except Exception as e:
+        app.logger.error(f"Request validation failed: {e}")
+        return jsonify({"error": "Invalid request format"}), 400
+
+    # Verify repository exists and user has access
+    try:
+        repos = get_repos(token)
+        if not repos:
+            return jsonify({"error": "No repositories found"}), 404
+            
+        repo = next(
+            (
+                item for item in repos
+                if item.get("clone_url") == repo_url
+                and (item.get("owner") or {}).get("login") == owner
+                and item.get("name") == repo_name
+            ),
+            None,
+        )
+        if not repo:
+            app.logger.warning(f"Repository not found: {owner}/{repo_name}")
+            return jsonify({"error": "Repository not found."}), 404
+
+    except Exception as e:
+        app.logger.error(f"Failed to verify repository: {e}")
+        return jsonify({"error": "Failed to verify repository"}), 500
+
+    # Run scan with comprehensive error handling
     try:
         result = run_repo_scan(repo, token)
+        
+        # Validate scan result
+        if not result or not isinstance(result, dict):
+            return jsonify({"error": "Invalid scan result"}), 500
+            
+        # Ensure report URLs are properly formatted
+        if "report_urls" in result:
+            for key, url in result["report_urls"].items():
+                if not url or not url.startswith("/"):
+                    result["report_urls"][key] = None
+                    
+        return jsonify(result)
+        
     except subprocess.CalledProcessError as exc:
         stderr = (exc.stderr or "").replace(token, "[redacted]").strip()
-        return jsonify({"error": "Scan failed.", "details": stderr or (exc.stdout or "").strip()}), 500
+        stdout = (exc.stdout or "").replace(token, "[redacted]").strip()
+        app.logger.error(f"Scan failed: {exc}")
+        return jsonify({
+            "error": "Scan failed.", 
+            "details": stderr or stdout or "Unknown scan error"
+        }), 500
     except FileNotFoundError as exc:
-        return jsonify({"error": str(exc)}), 500
+        app.logger.error(f"Scanner not found: {exc}")
+        return jsonify({"error": "Scanner not available"}), 500
     except subprocess.TimeoutExpired:
+        app.logger.error("Scan timed out")
         return jsonify({"error": "Scanner timed out."}), 504
     except ValueError as exc:
+        app.logger.error(f"Invalid scan parameters: {exc}")
         return jsonify({"error": str(exc)}), 400
-
-    return jsonify(result)
+    except Exception as exc:
+        app.logger.error(f"Unexpected scan error: {exc}")
+        return jsonify({"error": "Unexpected scan error"}), 500
 
 
 @app.route("/scan-all", methods=["POST"])
@@ -874,17 +1030,61 @@ def repo_report(owner, repo_name, scan_id, file_format):
     if not token:
         return redirect(url_for("index"))
 
-    report_dir = SCAN_REPORTS_DIR / Path(owner).name / Path(repo_name).name / Path(scan_id).name
+    # Validate file format
+    if file_format not in ["json", "pdf"]:
+        abort(400, description="Invalid file format")
+    
+    # Sanitize path components to prevent directory traversal
+    owner = Path(owner).name
+    repo_name = Path(repo_name).name
+    scan_id = Path(scan_id).name
+    
+    report_dir = SCAN_REPORTS_DIR / owner / repo_name / scan_id
     files = {
         "json": report_dir / "report.json",
         "pdf": report_dir / "report.pdf",
     }
     target = files.get(file_format)
+    
     if not target or not target.exists():
-        abort(404)
-
+        # Log the missing file for debugging
+        app.logger.error(f"Report file not found: {target}")
+        abort(404, description=f"Report file not found: {file_format}")
+    
+    # Verify file size to prevent serving empty files
+    if target.stat().st_size == 0:
+        app.logger.error(f"Report file is empty: {target}")
+        abort(404, description="Report file is empty")
+    
     as_attachment = request.args.get("download") == "1"
-    return send_file(target, as_attachment=as_attachment, download_name=target.name)
+    
+    # Set appropriate MIME type and headers
+    if file_format == "pdf":
+        mimetype = "application/pdf"
+        download_name = f"{owner}-{repo_name}-scan-{scan_id}.pdf"
+        # Add headers to ensure proper PDF handling
+        response = send_file(
+            target, 
+            as_attachment=as_attachment, 
+            download_name=download_name,
+            mimetype=mimetype,
+            conditional=True
+        )
+        response.headers['Content-Type'] = mimetype
+        response.headers['Content-Disposition'] = f'{"attachment" if as_attachment else "inline"}; filename="{download_name}"'
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+        return response
+    else:  # JSON
+        mimetype = "application/json"
+        download_name = f"{owner}-{repo_name}-scan-{scan_id}.json"
+        return send_file(
+            target, 
+            as_attachment=as_attachment, 
+            download_name=download_name,
+            mimetype=mimetype
+        )
 
 
 @app.route("/repo-details/<owner>/<repo_name>")
@@ -892,7 +1092,23 @@ def repo_details(owner, repo_name):
     token = session.get("access_token")
     if not token:
         return jsonify({"error": "Unauthorized"}), 401
-    return jsonify(get_repo_details(token, owner, repo_name))
+    
+    owner = (owner or "").strip()
+    repo_name = (repo_name or "").strip()
+    if not owner or not repo_name:
+        return jsonify({"error": "Invalid repository reference"}), 400
+    
+    try:
+        result = get_repo_details(token, owner, repo_name)
+        if not result:
+            return jsonify({"error": "Repository not found"}), 404
+        return jsonify(result)
+    except requests.exceptions.RequestException as e:
+        logger.error(f"GitHub API error for {owner}/{repo_name}: {e}")
+        return jsonify({"error": "GitHub API error", "details": str(e)}), 500
+    except Exception as e:
+        logger.error(f"Unexpected error getting repo details: {e}")
+        return jsonify({"error": "Failed to get repository details", "details": str(e)}), 500
 
 
 @app.route("/search")
@@ -930,29 +1146,42 @@ def scan_history():
     
     # Get all scan reports from the scan_reports directory
     scan_reports = []
-    if SCAN_REPORTS_DIR.exists():
-        for owner_dir in SCAN_REPORTS_DIR.iterdir():
-            if owner_dir.is_dir():
+    try:
+        if SCAN_REPORTS_DIR.exists():
+            for owner_dir in SCAN_REPORTS_DIR.iterdir():
+                if not owner_dir.is_dir():
+                    continue
                 for repo_dir in owner_dir.iterdir():
-                    if repo_dir.is_dir():
-                        for scan_dir in repo_dir.iterdir():
-                            if scan_dir.is_dir():
-                                report_json = scan_dir / "report.json"
-                                if report_json.exists():
-                                    try:
-                                        with open(report_json, encoding="utf-8") as f:
-                                            report_data = json.load(f)
-                                            scan_reports.append({
-                                                "owner": owner_dir.name,
-                                                "repo_name": repo_dir.name,
-                                                "scan_id": scan_dir.name,
-                                                "scan_date": report_data.get("scan_date"),
-                                                "total_findings": report_data.get("total_findings", 0),
-                                                "severity_counts": report_data.get("severity_counts", {}),
-                                                "report_path": str(report_json.relative_to(BASE_DIR))
-                                            })
-                                    except (json.JSONDecodeError, IOError):
-                                        continue
+                    if not repo_dir.is_dir():
+                        continue
+                    for scan_dir in repo_dir.iterdir():
+                        if not scan_dir.is_dir():
+                            continue
+                        report_json = scan_dir / "report.json"
+                        if report_json.exists():
+                            try:
+                                with open(report_json, encoding="utf-8") as f:
+                                    report_data = json.load(f)
+                                    scan_reports.append({
+                                        "owner": owner_dir.name,
+                                        "repo_name": repo_dir.name,
+                                        "scan_id": scan_dir.name,
+                                        "scan_date": report_data.get("scan_date"),
+                                        "total_findings": report_data.get("total_findings", 0),
+                                        "severity_counts": report_data.get("severity_counts", {}),
+                                        "report_path": str(report_json.relative_to(BASE_DIR))
+                                    })
+                            except (json.JSONDecodeError, IOError, ValueError) as e:
+                                logger.warning(f"Failed to load report {report_json}: {e}")
+                                continue
+    except (OSError, PermissionError) as e:
+        logger.error(f"Failed to read scan reports directory: {e}")
+        flash("Failed to load scan history. Please try again.", "error")
+        return render_template("scan_history.html", scan_reports=[])
+    except Exception as e:
+        logger.error(f"Unexpected error in scan_history: {e}")
+        flash("An error occurred while loading scan history.", "error")
+        return render_template("scan_history.html", scan_reports=[])
     
     # Sort by scan date (newest first)
     scan_reports.sort(key=lambda x: x.get("scan_date", ""), reverse=True)
@@ -966,5 +1195,41 @@ def logout():
     return redirect(url_for("index"))
 
 
+# Global error handlers for graceful error responses
+@app.errorhandler(400)
+def bad_request(error):
+    """Handle 400 Bad Request errors."""
+    if request.is_json or request.path.startswith("/api/"):
+        return jsonify({"error": "Bad request", "details": str(error)}), 400
+    return render_template("error.html", status_code=400, message="Bad request"), 400
+
+
+@app.errorhandler(403)
+def forbidden(error):
+    """Handle 403 Forbidden errors."""
+    if request.is_json or request.path.startswith("/api/"):
+        return jsonify({"error": "Forbidden", "details": str(error)}), 403
+    return render_template("error.html", status_code=403, message="Forbidden"), 403
+
+
+@app.errorhandler(404)
+def not_found(error):
+    """Handle 404 Not Found errors."""
+    if request.is_json or request.path.startswith("/api/"):
+        return jsonify({"error": "Not found", "details": str(error)}), 404
+    return render_template("error.html", status_code=404, message="Page not found"), 404
+
+
+@app.errorhandler(500)
+def internal_server_error(error):
+    """Handle 500 Internal Server Error."""
+    logger.error(f"Internal server error: {error}", exc_info=True)
+    if request.is_json or request.path.startswith("/api/"):
+        return jsonify({"error": "Internal server error", "details": "Please try again later"}), 500
+    return render_template("error.html", status_code=500, message="Internal server error"), 500
+
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    # Only use debug mode in development
+    debug_mode = os.environ.get("FLASK_ENV", "development") == "development"
+    app.run(debug=debug_mode, host="0.0.0.0", port=5000)

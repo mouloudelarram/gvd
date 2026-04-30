@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ status }} - GVD</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='images/favicon.png') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+  <style>
+    .error-container {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .error-content {
+      background: white;
+      border-radius: 8px;
+      padding: 48px 32px;
+      max-width: 600px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    }
+    
+    .error-code {
+      font-size: 72px;
+      font-weight: 700;
+      color: #d32f2f;
+      margin-bottom: 16px;
+      line-height: 1;
+    }
+    
+    .error-title {
+      font-size: 28px;
+      font-weight: 600;
+      color: #111827;
+      margin-bottom: 12px;
+    }
+    
+    .error-message {
+      font-size: 16px;
+      color: #6b7280;
+      margin-bottom: 32px;
+      line-height: 1.6;
+    }
+    
+    .error-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+    }
+    
+    .error-button {
+      display: inline-block;
+      padding: 12px 24px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .error-button-primary {
+      background: #2563eb;
+      color: white;
+    }
+    
+    .error-button-primary:hover {
+      background: #1d4ed8;
+    }
+    
+    .error-button-secondary {
+      background: #f3f4f6;
+      color: #111827;
+    }
+    
+    .error-button-secondary:hover {
+      background: #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+  <div class="error-container">
+    <div class="error-content">
+      <div class="error-code">{{ status }}</div>
+      <h1 class="error-title">{{ message }}</h1>
+      <p class="error-message">{{ detail }}</p>
+      <div class="error-actions">
+        <a href="{{ url_for('index') }}" class="error-button error-button-primary">Return Home</a>
+        {% if status != 401 %}
+        <a href="javascript:history.back()" class="error-button error-button-secondary">Go Back</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</body>
+</html>
