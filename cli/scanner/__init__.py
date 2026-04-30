@@ -1,0 +1,1 @@
+"""CLI scanner module."""

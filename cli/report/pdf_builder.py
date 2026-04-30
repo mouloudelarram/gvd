@@ -21,7 +21,10 @@ from reportlab.platypus import (
     KeepTogether,
 )
 
-from cli.core.models import Finding
+try:
+    from cli.core.models import Finding
+except ImportError:
+    from core.models import Finding
 
 
 # Color palette

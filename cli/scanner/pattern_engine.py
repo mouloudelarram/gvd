@@ -1,6 +1,9 @@
 import re
 from typing import List, Dict, Pattern
-from cli.core.models import Severity
+try:
+    from cli.core.models import Severity
+except ImportError:
+    from core.models import Severity
 
 class PatternEngine:
     def __init__(self):

@@ -1,7 +1,11 @@
 from typing import List
 from pathlib import Path
 import json
-from cli.core.models import Finding
+try:
+    from cli.core.models import Finding
+except ImportError:
+    from core.models import Finding
+from datetime import datetime
 
 class ReportBuilder:
     def __init__(self, findings: List[Finding]):
@@ -9,9 +13,18 @@ class ReportBuilder:
 
     def build_json_report(self) -> dict:
         """Build JSON report."""
+        # Calculate severity counts
+        severity_counts = {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
+        for finding in self.findings:
+            severity = finding.severity.value
+            if severity in severity_counts:
+                severity_counts[severity] += 1
+        
         return {
             "repo_name": self.findings[0].repo_name if self.findings else "",
+            "scan_date": datetime.now().isoformat(),
             "total_findings": len(self.findings),
+            "severity_counts": severity_counts,
             "findings": [
                 {
                     "commit_hash": f.commit_hash,

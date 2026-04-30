@@ -2,20 +2,34 @@ import argparse
 import sys
 from pathlib import Path
 
-# Add parent directory to path to allow absolute imports when run directly
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
 from rich.console import Console
 from rich.table import Table
 from rich.progress import Progress
-from cli.core.git_utils import is_git_repo, get_repo_root, get_repo_name
-from cli.scanner.pattern_engine import PatternEngine
-from cli.scanner.git_history import GitHistoryScanner
-from cli.scanner.file_scanner import FileScanner
-from cli.scanner.risk_engine import RiskEngine
-from cli.report.builder import ReportBuilder
-from cli.report.exporter import ReportExporter
-from cli.utils.logger import setup_logger
+
+try:
+    # When run as installed package
+    from cli.core.git_utils import is_git_repo, get_repo_root, get_repo_name
+    from cli.scanner.pattern_engine import PatternEngine
+    from cli.scanner.git_history import GitHistoryScanner
+    from cli.scanner.file_scanner import FileScanner
+    from cli.scanner.risk_engine import RiskEngine
+    from cli.report.builder import ReportBuilder
+    from cli.report.exporter import ReportExporter
+    from cli.utils.logger import setup_logger
+except ImportError:
+    # When run directly as script - add current directory to path
+    current_dir = Path(__file__).parent
+    sys.path.insert(0, str(current_dir))
+    
+    # Use relative imports
+    from core.git_utils import is_git_repo, get_repo_root, get_repo_name
+    from scanner.pattern_engine import PatternEngine
+    from scanner.git_history import GitHistoryScanner
+    from scanner.file_scanner import FileScanner
+    from scanner.risk_engine import RiskEngine
+    from report.builder import ReportBuilder
+    from report.exporter import ReportExporter
+    from utils.logger import setup_logger
 
 logger = setup_logger()
 console = Console()

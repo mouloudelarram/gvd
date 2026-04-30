@@ -2,8 +2,12 @@ import subprocess
 import re
 from pathlib import Path
 from typing import List, Generator
-from cli.core.models import Finding
-from cli.scanner.pattern_engine import PatternEngine
+try:
+    from cli.core.models import Finding
+    from cli.scanner.pattern_engine import PatternEngine
+except ImportError:
+    from core.models import Finding
+    from scanner.pattern_engine import PatternEngine
 
 class GitHistoryScanner:
     def __init__(self, pattern_engine: PatternEngine):

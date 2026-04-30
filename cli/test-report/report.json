@@ -1,0 +1,67 @@
+{
+  "repo_name": "gvd",
+  "scan_date": "2026-04-30T16:21:37.149308",
+  "total_findings": 6,
+  "severity_counts": {
+    "CRITICAL": 3,
+    "HIGH": 3,
+    "MEDIUM": 0,
+    "LOW": 0
+  },
+  "findings": [
+    {
+      "commit_hash": "ed8432784c5da71ab8982e3b6fd1f8fdb80c4565",
+      "file_path": "DOCKER_SETUP.md",
+      "line_number": null,
+      "secret_type": "secret",
+      "severity": "HIGH",
+      "content": "GITHUB_CLIENT_SECRET=your_github_client_secret",
+      "fix_recommendation": "Remove secret from repository"
+    },
+    {
+      "commit_hash": "ed8432784c5da71ab8982e3b6fd1f8fdb80c4565",
+      "file_path": "saas/.env.example",
+      "line_number": null,
+      "secret_type": "secret",
+      "severity": "HIGH",
+      "content": "GITHUB_CLIENT_SECRET=your_github_client_secret_here",
+      "fix_recommendation": "Remove secret from repository"
+    },
+    {
+      "commit_hash": "4424a2c17b95b0d3174a6ff1d8c860fef3204dff",
+      "file_path": "HANDBOOK.md",
+      "line_number": null,
+      "secret_type": "aws_key",
+      "severity": "CRITICAL",
+      "content": "\"content\": \"AWS_ACCESS_KEY_ID = \\\"AKIAIOSFODNN7EXAMPLE\\\"\",",
+      "fix_recommendation": "Rotate AWS credentials immediately"
+    },
+    {
+      "commit_hash": "4424a2c17b95b0d3174a6ff1d8c860fef3204dff",
+      "file_path": "HANDBOOK.md",
+      "line_number": null,
+      "secret_type": "token",
+      "severity": "HIGH",
+      "content": "\"content\": \"GITHUB_TOKEN=ghp_1234567890abcdef...\",",
+      "fix_recommendation": "Rotate token and check for exposure"
+    },
+    {
+      "commit_hash": "4424a2c17b95b0d3174a6ff1d8c860fef3204dff",
+      "file_path": "README.md",
+      "line_number": null,
+      "secret_type": "aws_key",
+      "severity": "CRITICAL",
+      "content": "\"content\": \"AWS_KEY = \\\"AKIAIOSFODNN7EXAMPLE\\\"\",",
+      "fix_recommendation": "Rotate AWS credentials immediately"
+    },
+    {
+      "commit_hash": "4424a2c17b95b0d3174a6ff1d8c860fef3204dff",
+      "file_path": "gvd/scanner/pattern_engine.py",
+      "line_number": null,
+      "secret_type": "private_key",
+      "severity": "CRITICAL",
+      "content": "\"regex\": r\"-----BEGIN PRIVATE KEY-----\",",
+      "fix_recommendation": "Remove private key from repository"
+    }
+  ]
+}

@@ -1,8 +1,12 @@
 import re
 from pathlib import Path
 from typing import List, Set
-from cli.core.git_utils import run_git_command
-from cli.core.models import Severity, Finding
+try:
+    from cli.core.git_utils import run_git_command
+    from cli.core.models import Severity, Finding
+except ImportError:
+    from core.git_utils import run_git_command
+    from core.models import Severity, Finding
 
 class FileScanner:
     def __init__(self):

@@ -1,4 +1,7 @@
-from cli.core.models import Finding, Severity
+try:
+    from cli.core.models import Finding, Severity
+except ImportError:
+    from core.models import Finding, Severity
 
 class RiskEngine:
     @staticmethod

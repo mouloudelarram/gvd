@@ -5,10 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "gvd"
 version = "0.1.0"
-description = "Git Vulnerabilities Detector"
+description = "Git Vulnerabilities Detector - Lightweight GitHub security scanning"
 authors = [{name = "GVD Team"}]
-dependencies = ["rich", "reportlab>=4.0.0"]
+dependencies = ["rich>=13.0.0", "reportlab>=4.0.0", "python-dateutil>=2.8.0"]
 readme = "README.md"
+requires-python = ">=3.10"
 
 [project.scripts]
-gvd = "gvd.cli:main"
+gvd = "cli:main"
+
+[tool.setuptools.packages]
+find = {where = ["."]}

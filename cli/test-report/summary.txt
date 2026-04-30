@@ -1,0 +1,6 @@
+GVD Scan Summary
+Total findings: 6
+Critical: 3
+High: 3
+Medium: 0
+Low: 0
