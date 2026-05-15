@@ -290,6 +290,15 @@ def build_repo_key(owner, repo_name):
     return f"{Path(owner).name}/{Path(repo_name).name}"
 
 
+@app.route("/health")
+def health():
+    """Health check endpoint for Docker/Kubernetes healthchecks.
+    
+    Returns 200 OK immediately without requiring authentication.
+    """
+    return jsonify({"status": "healthy"}), 200
+
+
 @app.route("/")
 def index():
     if session.get("access_token"):
