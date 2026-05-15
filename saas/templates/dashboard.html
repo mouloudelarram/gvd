@@ -18,26 +18,32 @@
         <h1 class="dashboard-title">Repositories</h1>
         <p class="dashboard-subtitle">Monitor and scan your GitHub repositories for security vulnerabilities</p>
       </div>
-      
+
       <div class="dashboard-actions">
         <div class="filter-controls">
           <div class="search-wrapper">
-            <input type="text" id="repo-search" placeholder="Search repositories..." autocomplete="off" class="search-input">
+            <input type="text" id="repo-search" placeholder="Search repositories..." autocomplete="off"
+              class="search-input">
             <div class="search-results" id="search-results" hidden></div>
           </div>
-          
+
           <div class="filter-dropdown">
             <select id="repo-visibility-filter" class="filter-select">
-              <option value="both" {% if current_visibility == 'both' %}selected{% endif %}>All Repositories</option>
-              <option value="public" {% if current_visibility == 'public' %}selected{% endif %}>Public</option>
-              <option value="private" {% if current_visibility == 'private' %}selected{% endif %}>Private</option>
+              <option value="both" {% if current_visibility=='both' %}selected{% endif %}>All Repositories</option>
+              <option value="public" {% if current_visibility=='public' %}selected{% endif %}>Public</option>
+              <option value="private" {% if current_visibility=='private' %}selected{% endif %}>Private</option>
             </select>
           </div>
         </div>
-        
+
         <button class="btn btn-primary" id="scan-all-button" type="button">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M8 2v6M8 10v4M3 8h6M10 8h3M4 4l4 4M12 4l-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 4h6v6H4z" />
+            <path d="M14 4h6v6h-6z" />
+            <path d="M4 14h6v6H4z" />
+            <path d="M17 14v6" />
+            <path d="M14 17h6" />
           </svg>
           Scan All
         </button>
@@ -50,9 +56,11 @@
     <div class="metrics-container">
       <div class="metric-card">
         <div class="metric-icon">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M3 3h14v14H3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M3 7h14M7 3v14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v18H6.5A2.5 2.5 0 0 0 4 23z" />
+            <path d="M8 7h8" />
+            <path d="M8 11h8" />
           </svg>
         </div>
         <div class="metric-content">
@@ -60,13 +68,15 @@
           <div class="metric-label">Total Repositories</div>
         </div>
       </div>
-      
+
       <div class="metric-card">
         <div class="metric-icon metric-icon-public">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 2C10 2 8 5 8 8C8 11 10 14 10 14C10 14 12 11 12 8C12 5 10 2 10 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M10 14V18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M6 18H14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M3 12h18" />
+            <path d="M12 3a15 15 0 0 1 0 18" />
+            <path d="M12 3a15 15 0 0 0 0 18" />
           </svg>
         </div>
         <div class="metric-content">
@@ -74,12 +84,13 @@
           <div class="metric-label">Public Repos</div>
         </div>
       </div>
-      
+
       <div class="metric-card">
         <div class="metric-icon metric-icon-private">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="3" y="7" width="14" height="10" rx="2" stroke="currentColor" stroke-width="2"/>
-            <path d="M7 7V5a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="11" width="14" height="10" rx="2" />
+            <path d="M8 11V8a4 4 0 1 1 8 0v3" />
           </svg>
         </div>
         <div class="metric-content">
@@ -87,12 +98,13 @@
           <div class="metric-label">Private Repos</div>
         </div>
       </div>
-      
+
       <div class="metric-card">
         <div class="metric-icon metric-icon-scanned">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M9 12L11 14L15 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M10 2C10 2 8 5 8 8C8 11 10 14 10 14C10 14 12 11 12 8C12 5 10 2 10 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v5l3 3" />
           </svg>
         </div>
         <div class="metric-content">
@@ -100,12 +112,14 @@
           <div class="metric-label">Scanned Today</div>
         </div>
       </div>
-      
+
       <div class="metric-card metric-card-danger">
         <div class="metric-icon metric-icon-risk">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M10 2L2 8v8l8 6 8-6V8l-8-6z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M10 6v4M10 12h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3L2 20h20L12 3z" />
+            <path d="M12 9v4" />
+            <circle cx="12" cy="17" r="1" />
           </svg>
         </div>
         <div class="metric-content">
@@ -121,7 +135,8 @@
   <div class="alert alert-success">
     <div class="alert-content">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M13.5 4.5L6 12L2.5 8.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M13.5 4.5L6 12L2.5 8.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" />
       </svg>
       <span>{{ message }}</span>
     </div>
@@ -133,12 +148,12 @@
     {% if displayed_repos %}
     <div class="repo-grid" role="grid" aria-label="Repository grid">
       {% for repo in displayed_repos %}
-      <article class="repo-card" data-visibility="{{ repo.visibility }}" role="gridcell">
+      <article class="repo-card" data-visibility="{{ repo.visibility }}" data-owner="{{ repo.owner.login }}" data-repo="{{ repo.name }}" data-repo-url="{{ repo.clone_url }}" role="gridcell">
         <header class="repo-card-header">
           <div class="repo-info">
             <h3 class="repo-name">
-              <a href="{{ repo.html_url or '#' }}" target="_blank" rel="noopener noreferrer" 
-                 aria-describedby="repo-{{ repo.name }}-meta">{{ repo.name }}</a>
+              <a href="{{ repo.html_url or '#' }}" target="_blank" rel="noopener noreferrer"
+                aria-describedby="repo-{{ repo.name }}-meta">{{ repo.name }}</a>
             </h3>
             <div class="repo-meta" id="repo-{{ repo.name }}-meta">
               <span class="badge badge-{{ repo.visibility }}" role="status">{{ repo.visibility }}</span>
@@ -150,32 +165,39 @@
           <div class="repo-stats" role="group" aria-label="Repository statistics">
             {% if repo.stargazers_count %}
             <div class="stat-item">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M7 2l1.5 3L12 6l-2.5 2L10 11l-3-2-3 2 0.5-3L2 6l3.5-1L7 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true">
+                <path d="M7 2l1.5 3L12 6l-2.5 2L10 11l-3-2-3 2 0.5-3L2 6l3.5-1L7 2z" stroke="currentColor"
+                  stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
               <span aria-label="{{ repo.stargazers_count }} stars">{{ repo.stargazers_count }}</span>
             </div>
             {% endif %}
             {% if repo.forks_count %}
             <div class="stat-item">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <path d="M3 3h3v3H3zM8 3h3v3H8zM3 8h3v3H3z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M6 6h2M6 11h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true">
+                <path d="M3 3h3v3H3zM8 3h3v3H8zM3 8h3v3H3z" stroke="currentColor" stroke-width="1.5"
+                  stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M6 6h2M6 11h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                  stroke-linejoin="round" />
               </svg>
               <span aria-label="{{ repo.forks_count }} forks">{{ repo.forks_count }}</span>
             </div>
             {% endif %}
           </div>
         </header>
-        
+
         <div class="repo-card-body">
           <p class="repo-description">
             {{ repo.description | escape or "No description provided." }}
           </p>
-          
+
           <div class="repo-updated" role="status">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M6 1v3M6 8v3M3 6h3M8 6h1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true">
+              <path d="M6 1v3M6 8v3M3 6h3M8 6h1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" />
             </svg>
             <time datetime="{{ repo.updated_at or '' }}">
               {% if repo.updated_at %}
@@ -186,34 +208,30 @@
             </time>
           </div>
         </div>
-        
+
         <footer class="repo-card-footer">
-          <button
-            class="btn btn-ghost btn-sm repo-details-btn"
-            type="button"
-            data-owner="{{ repo.owner.login }}"
-            data-repo="{{ repo.name }}"
-            aria-label="View details for {{ repo.name }}"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M7 2C7 2 5 4 5 6C5 8 7 10 7 10C7 10 9 8 9 6C9 4 7 2 7 2Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M7 10v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M4 12h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <button class="btn btn-ghost btn-sm repo-details-btn" type="button" data-owner="{{ repo.owner.login }}"
+            data-repo="{{ repo.name }}" aria-label="View details for {{ repo.name }}">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true">
+              <path d="M7 2C7 2 5 4 5 6C5 8 7 10 7 10C7 10 9 8 9 6C9 4 7 2 7 2Z" stroke="currentColor"
+                stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M7 10v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <path d="M4 12h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" />
             </svg>
             Details
           </button>
 
-          <button
-            class="btn btn-primary btn-sm repo-scan-btn"
-            type="button"
-            data-owner="{{ repo.owner.login }}"
-            data-repo="{{ repo.name }}"
-            data-repo-url="{{ repo.clone_url }}"
-            aria-label="Scan {{ repo.name }} for vulnerabilities"
-          >
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M7 1v3M7 10v3M3 7h3M10 7h1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <circle cx="7" cy="7" r="1" fill="currentColor"/>
+          <button class="btn btn-primary btn-sm repo-scan-btn" type="button" data-owner="{{ repo.owner.login }}"
+            data-repo="{{ repo.name }}" data-repo-url="{{ repo.clone_url }}"
+            aria-label="Scan {{ repo.name }} for vulnerabilities">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true">
+              <path d="M7 1v3M7 10v3M3 7h3M10 7h1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"
+                stroke-linejoin="round" />
+              <circle cx="7" cy="7" r="1" fill="currentColor" />
             </svg>
             Scan
           </button>
@@ -225,7 +243,8 @@
     <!-- Pagination -->
     {% if repos|length > visible_count %}
     <div class="pagination-container">
-      <a class="btn btn-secondary" href="{{ url_for('dashboard', limit=visible_count + 15, visibility=current_visibility) }}">
+      <a class="btn btn-secondary"
+        href="{{ url_for('dashboard', limit=visible_count + 15, visibility=current_visibility) }}">
         Load More Repositories
       </a>
     </div>
@@ -236,8 +255,10 @@
       <div class="empty-state-content">
         <div class="empty-state-icon">
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M24 8L12 16v16l12 8 12-8V16l-12-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M20 20l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M24 8L12 16v16l12 8 12-8V16l-12-8z" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" />
+            <path d="M20 20l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" />
           </svg>
         </div>
         <h2 class="empty-state-title">No repositories found</h2>
@@ -256,17 +277,18 @@
       </div>
     </div>
     {% endif %}
-  </div>
+</div>
 </div>
 
-    <!-- Modals -->
+<!-- Modals -->
 <div class="modal-overlay" id="repo-modal" hidden>
   <div class="modal">
     <div class="modal-header">
       <h2 class="modal-title">Repository Details</h2>
       <button class="btn btn-ghost btn-sm" data-close-modal="true">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" />
         </svg>
       </button>
     </div>
@@ -284,7 +306,8 @@
     <div class="modal-footer">
       <a href="#" id="modal-link" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M8 2v6M8 10v4M3 8h6M10 8h3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M8 2v6M8 10v4M3 8h6M10 8h3" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" />
         </svg>
         Open on GitHub
       </a>
@@ -299,7 +322,8 @@
       <h2 class="modal-title">Scan Results</h2>
       <button class="btn btn-ghost btn-sm" data-close-scan-modal="true">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" />
         </svg>
       </button>
     </div>
@@ -331,6 +355,69 @@
   </div>
 </div>
 
+<!-- Bulk Scan Modal -->
+<div class="modal-overlay" id="bulk-scan-modal" hidden>
+  <div class="modal modal-large">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Bulk Repository Scan</h2>
+        <p class="bulk-scan-subtitle">Real-time vulnerability scanning across all repositories</p>
+      </div>
+      <button class="btn btn-ghost btn-sm" data-close-scan-modal="true">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <!-- Progress Section -->
+      <div class="bulk-scan-progress-section">
+        <div class="bulk-scan-progress-bar">
+          <div class="progress-bar" id="bulk-progress-bar" style="width: 0%"></div>
+        </div>
+        <div class="bulk-scan-progress-text">
+          <span id="bulk-progress-text">0 / 0 repositories scanned</span>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="bulk-stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Completed</div>
+          <div class="stat-value" id="bulk-stat-completed">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Findings</div>
+          <div class="stat-value" id="bulk-stat-findings">0</div>
+        </div>
+        <div class="stat-card stat-card-critical">
+          <div class="stat-label">High Risk</div>
+          <div class="stat-value" id="bulk-stat-critical">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Failures</div>
+          <div class="stat-value" id="bulk-stat-failures">0</div>
+        </div>
+      </div>
+
+      <!-- Live Logs -->
+      <div class="bulk-scan-logs-section">
+        <h3 class="bulk-logs-title">Scan Activity</h3>
+        <div class="bulk-scan-logs" id="bulk-scan-logs">
+          <div class="log-entry log-entry-info">
+            <span class="log-time">00:00:00</span>
+            <span class="log-message">Initializing bulk scan...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="bulk-scan-close-btn" data-close-scan-modal="true">Close</button>
+    </div>
+  </div>
+</div>
+
 <!-- Report Viewer Modal -->
 <div class="modal-overlay" id="report-viewer-modal" hidden>
   <div class="modal modal-large">
@@ -338,7 +425,8 @@
       <h2 class="modal-title" id="report-viewer-title">Report Viewer</h2>
       <button class="modal-close" data-close-modal="true" aria-label="Close modal">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" />
         </svg>
       </button>
     </div>
@@ -366,387 +454,141 @@
   }
 </script>
 {% endblock %}
-          '<div class="bulk-report-item__header">',
-          '<h4>' + escapeHtml(repo.owner + "/" + repo.repo_name) + '</h4>',
-          '<span class="modal__meta-item">Findings: ' + escapeHtml(repo.total_findings) + '</span>',
-          '</div>',
-          '<p class="bulk-report-item__meta">Path: ' + escapeHtml(repo.repo_path) + '</p>',
-          '<p class="bulk-report-item__meta">Critical: ' + escapeHtml(counts.CRITICAL || 0) + ' | High: ' + escapeHtml(counts.HIGH || 0) + ' | Medium: ' + escapeHtml(counts.MEDIUM || 0) + ' | Low: ' + escapeHtml(counts.LOW || 0) + '</p>',
-          '<div class="bulk-report-item__actions">',
-          '<button class="button button--secondary" type="button" data-report-view-json="' + escapeHtml(urls.view_json || "") + '" data-report-title="' + escapeHtml(repo.owner + "/" + repo.repo_name + ' JSON report') + '">View JSON</button>',
-          '<a class="button button--secondary" href="' + escapeHtml(urls.download_json || "#") + '">Download JSON</a>',
-          '<button class="button button--secondary" type="button" data-report-view-pdf="' + escapeHtml(urls.view_pdf || "") + '" data-report-title="' + escapeHtml(repo.owner + "/" + repo.repo_name + ' PDF report') + '">View PDF</button>',
-          '<a class="button button--secondary" href="' + escapeHtml(urls.download_pdf || "#") + '">Download PDF</a>',
-          '</div>',
-          '</article>'
-        ].join("");
-      }).join("");
-
-      wireReportActionButtons(bulkReportList);
+'<div class="bulk-report-item__header">',
+  '<h4>' + escapeHtml(repo.owner + "/" + repo.repo_name) + '</h4>',
+  '<span class="modal__meta-item">Findings: ' + escapeHtml(repo.total_findings) + '</span>',
+  '</div>',
+'<p class="bulk-report-item__meta">Path: ' + escapeHtml(repo.repo_path) + '</p>',
+'<p class="bulk-report-item__meta">Critical: ' + escapeHtml(counts.CRITICAL || 0) + ' | High: ' + escapeHtml(counts.HIGH
+  || 0) + ' | Medium: ' + escapeHtml(counts.MEDIUM || 0) + ' | Low: ' + escapeHtml(counts.LOW || 0) + '</p>',
+'<div class="bulk-report-item__actions">',
+  '<button class="button button--secondary" type="button"
+    data-report-view-json="' + escapeHtml(urls.view_json || "") + '" data-report-title="' + escapeHtml(repo.owner + " /"
+    + repo.repo_name + ' JSON report' ) + '">View JSON</button>' , '<a class="button button--secondary" href="' +
+    escapeHtml(urls.download_json || "#" ) + '">Download JSON</a>'
+    , '<button class="button button--secondary" type="button" data-report-view-pdf="' + escapeHtml(urls.view_pdf || "" )
+    + '" data-report-title="' + escapeHtml(repo.owner + "/" + repo.repo_name + ' PDF report' ) + '">View PDF</button>'
+    , '<a class="button button--secondary" href="' + escapeHtml(urls.download_pdf || "#" ) + '">Download PDF</a>'
+    , '</div>' , '</article>' ].join(""); }).join(""); wireReportActionButtons(bulkReportList); } function
+    renderBulkFailures(result) { const failures=result.failures || []; if (!failures.length) {
+    bulkFailureList.innerHTML='<p class="scan-empty">No repository failures.</p>' ; return; }
+    bulkFailureList.innerHTML=failures.map(function(failure) { return
+    [ '<article class="bulk-report-item bulk-report-item--failure">' , '<div class="bulk-report-item__header">' , '<h4>'
+    + escapeHtml(failure.owner + "/" + failure.repo_name) + '</h4>' , '</div>' , '<p class="bulk-report-item__meta">' +
+    escapeHtml(failure.error || "Unknown error" ) + '</p>' , '</article>' ].join(""); }).join(""); } function
+    renderBulkSkipped(result) { const skipped=result.skipped_repositories || []; if (!skipped.length) {
+    bulkSkippedList.innerHTML='<p class="scan-empty">No skipped repositories.</p>' ; return; }
+    bulkSkippedList.innerHTML=skipped.map(function(item) { return [ '<article class="bulk-report-item">'
+    , '<div class="bulk-report-item__header">' , '<h4>' + escapeHtml(item.owner + "/" + item.repo_name) + '</h4>'
+    , '<span class="modal__meta-item">Skipped</span>' , '</div>' , '<p class="bulk-report-item__meta">' +
+    escapeHtml(item.error || "Skipped by user." ) + '</p>' , '</article>' ].join(""); }).join(""); } function
+    renderBulkLogs(job) { const logs=job.logs || []; bulkScanLog.textContent=logs.length ? logs.join("\n")
+    : "No logs yet." ; bulkScanLog.scrollTop=bulkScanLog.scrollHeight; } async function pollBulkScanJob(jobId) { try {
+    const response=await fetch("/scan-all/" + encodeURIComponent(jobId)); const result=await response.json(); if
+    (!response.ok) { throw new Error(result.error || "Unable to load bulk scan status." ); } activeBulkScanJobId=jobId;
+    renderBulkLogs(result); renderBulkCurrentRepo(result); renderBulkPending(result); renderBulkRepositories(result);
+    renderBulkFailures(result); renderBulkSkipped(result); bulkScanSummary.textContent="Scanned " +
+    (result.scanned_repositories || 0) + " of " + (result.total_repositories || 0) + " repositories. Failed: " +
+    (result.failed_repositories || 0) + "." ; if (result.status==="completed" && result.report) { stopBulkScanPolling();
+    bulkScanModalTitle.textContent="Bulk scan report" ; renderBulkMeta(result.report);
+    bulkScanSummary.textContent=result.report.total_findings ? "The full scan completed and found " +
+    result.report.total_findings + " potential issue(s) across your repositories."
+    : "The full scan completed and no vulnerabilities were found." ; renderBulkCurrentRepo({ status: "completed" });
+    renderBulkPending({ pending_repositories: [] }); renderBulkRepositories(result.report);
+    renderBulkFailures(result.report); renderBulkSkipped(result.report); if (result.report.download_urls) {
+    bulkViewJson.dataset.reportViewJson=(result.report.view_urls || {}).json || "" ;
+    bulkDownloadJson.href=result.report.download_urls.json; bulkViewPdf.dataset.reportViewPdf=(result.report.view_urls
+    || {}).pdf || "" ; bulkDownloadPdf.href=result.report.download_urls.pdf; setActionState(bulkViewJson, true);
+    bulkDownloadJson.classList.remove("is-disabled"); setActionState(bulkViewPdf, true);
+    bulkDownloadPdf.classList.remove("is-disabled"); } return; } if (result.status==="failed" ) { stopBulkScanPolling();
+    throw new Error(result.error || "Bulk scan failed." ); } bulkScanPollTimer=window.setTimeout(function() {
+    pollBulkScanJob(jobId); }, 1200); } catch (error) { stopBulkScanPolling();
+    bulkScanSummary.textContent="The full scan could not be completed." ;
+    bulkReportList.innerHTML='<p class="scan-empty">' + escapeHtml(error.message) + "</p>" ;
+    bulkFailureList.innerHTML='<p class="scan-empty">No repository-level details available.</p>' ;
+    bulkSkippedList.innerHTML='<p class="scan-empty">No repository-level details available.</p>' ;
+    bulkScanLog.textContent +="\n" + error.message; renderBulkCurrentRepo({ status: "failed" }); } } async function
+    requestBulkSkip(owner, repo) { if (!activeBulkScanJobId) { return; } try { const response=await fetch("/scan-all/" +
+    encodeURIComponent(activeBulkScanJobId) + "/skip" , { method: "POST" , headers: { "Content-Type"
+    : "application/json" }, body: JSON.stringify({ owner: owner, repo_name: repo }) }); const result=await
+    response.json(); if (!response.ok) { throw new Error(result.error || "Unable to skip repository." ); } } catch
+    (error) { bulkScanLog.textContent +="\n" + error.message; } }
+    document.querySelectorAll(".repo-card__details-button").forEach(function(button) { button.addEventListener("click",
+    async function(event) { event.preventDefault(); const owner=button.dataset.owner; const repo=button.dataset.repo;
+    setLoadingState(repo); openModal(); try { const response=await fetch("/repo-details/" + encodeURIComponent(owner)
+    + "/" + encodeURIComponent(repo)); if (!response.ok) { throw new Error("Unable to load repository details."); }
+    const details=await response.json(); modalTitle.textContent=details.full_name || details.name; renderMeta(details);
+    modalDescription.textContent=details.description || "No description provided." ;
+    modalReadme.textContent=details.readme || "README not available for this repository." ;
+    modalLink.href=details.html_url || "#" ; } catch (error) {
+    modalDescription.textContent="Repository details could not be loaded." ; modalReadme.textContent=error.message; }
+    }); }); modal.addEventListener("click", function(event) { if (event.target.dataset.closeModal==="true" ) {
+    closeModal(); } }); document.querySelectorAll(".scan-button").forEach(function(button) {
+    button.addEventListener("click", async function() { const owner=button.dataset.owner; const
+    repo=button.dataset.repo; const repoUrl=button.dataset.repoUrl; setScanLoadingState(repo); openScanModal(); try {
+    const response=await fetch("/scan", { method: "POST" , headers: { "Content-Type" : "application/json" }, body:
+    JSON.stringify({ owner: owner, repo_name: repo, repo_url: repoUrl }) }); const result=await response.json(); if
+    (!response.ok) { throw new Error(result.details || result.error || "Scan failed." ); }
+    scanModalTitle.textContent="Scan results for " + (result.repo_name || repo); renderScanMeta(result);
+    scanSummary.textContent=result.total_findings ? "The scan completed and found " + result.total_findings
+    + " potential issue(s)." : "The scan completed and no vulnerabilities were found." ; renderFindings(result);
+    scanOutput.textContent=result.command_output || "No scanner output captured." ; // Show and configure report buttons
+    const reportUrls=result.report_urls || {}; scanViewJson.hidden=false; scanViewPdf.hidden=false;
+    scanDownloadJson.hidden=false; scanDownloadPdf.hidden=false;
+    scanViewJson.dataset.reportViewJson=reportUrls.view_json || "" ; scanDownloadJson.href=reportUrls.download_json
+    || "#" ; scanViewPdf.dataset.reportViewPdf=reportUrls.view_pdf || "" ; scanDownloadPdf.href=reportUrls.download_pdf
+    || "#" ; } catch (error) { scanSummary.textContent="The scan could not be completed." ;
+    scanFindings.innerHTML='<p class="scan-empty">' + escapeHtml(error.message) + "</p>" ;
+    scanOutput.textContent=error.message; } }); }); scanModal.addEventListener("click", function(event) { if
+    (event.target.dataset.closeScanModal==="true" ) { closeScanModal(); } }); // Wire scan report buttons
+    scanViewJson.addEventListener("click", function() { if (scanViewJson.classList.contains("is-disabled")) { return; }
+    const url=scanViewJson.dataset.reportViewJson; if (url) { openJsonReport(url, "Scan JSON Report" ); } });
+    scanViewPdf.addEventListener("click", function() { if (scanViewPdf.classList.contains("is-disabled")) { return; }
+    const url=scanViewPdf.dataset.reportViewPdf; if (url) { openPdfReport(url, "Scan PDF Report" ); } });
+    scanAllButton.addEventListener("click", async function() { stopBulkScanPolling(); activeBulkScanJobId=null;
+    setBulkLoadingState(); openBulkScanModal(); try { const visibility=repoVisibilityFilter.value || "both" ; const
+    response=await fetch("/scan-all", { method: "POST" , headers: { "Content-Type" : "application/json" }, body:
+    JSON.stringify({ visibility: visibility }) }); const result=await response.json(); if (!response.ok) { throw new
+    Error(result.error || "Bulk scan failed." ); } activeBulkScanJobId=result.job_id;
+    bulkScanSummary.textContent="Bulk scan started for " + result.total_repositories + " " + visibility
+    + " repositories." ; pollBulkScanJob(result.job_id); } catch (error) { stopBulkScanPolling();
+    bulkScanSummary.textContent="The full scan could not be completed." ;
+    bulkReportList.innerHTML='<p class="scan-empty">' + escapeHtml(error.message) + "</p>" ;
+    bulkFailureList.innerHTML='<p class="scan-empty">No repository-level details available.</p>' ;
+    bulkSkippedList.innerHTML='<p class="scan-empty">No repository-level details available.</p>' ;
+    bulkScanLog.textContent=error.message; } }); bulkViewJson.addEventListener("click", function() { if
+    (bulkViewJson.classList.contains("is-disabled")) { return; }
+    openJsonReport(bulkViewJson.dataset.reportViewJson, "Bulk JSON report" ); }); bulkViewPdf.addEventListener("click",
+    function() { if (bulkViewPdf.classList.contains("is-disabled")) { return; }
+    openPdfReport(bulkViewPdf.dataset.reportViewPdf, "Bulk PDF report" ); });
+    skipCurrentButton.addEventListener("click", function() { if (skipCurrentButton.classList.contains("is-disabled") ||
+    !activeBulkScanJobId) { return; } const currentRepo=bulkCurrentRepo.querySelector("h4"); if (!currentRepo) { return;
+    } const parts=currentRepo.textContent.split("/"); const owner=parts[0] || "" ; const repo=parts.slice(1).join("/")
+    || "" ; requestBulkSkip(owner, repo); }); bulkScanModal.addEventListener("click", function(event) { if
+    (event.target.dataset.closeBulkScanModal==="true" ) { closeBulkScanModal(); } });
+    reportViewerModal.addEventListener("click", function(event) { if (event.target.dataset.closeReportViewer==="true" )
+    { closeReportViewer(); } }); document.addEventListener("keydown", function(event) { if (event.key==="Escape" &&
+    !modal.hidden) { closeModal(); } if (event.key==="Escape" && !scanModal.hidden) { closeScanModal(); } if
+    (event.key==="Escape" && !bulkScanModal.hidden) { closeBulkScanModal(); } if (event.key==="Escape" &&
+    !reportViewerModal.hidden) { closeReportViewer(); } }); repoVisibilityFilter.addEventListener("change",
+    applyVisibilityFilter); repoSearch.addEventListener("input", debounceSearch); repoSearch.addEventListener("focus",
+    function() { if (repoSearch.value.trim().length>= 2) {
+    searchResults.hidden = false;
     }
-
-    function renderBulkFailures(result) {
-      const failures = result.failures || [];
-      if (!failures.length) {
-        bulkFailureList.innerHTML = '<p class="scan-empty">No repository failures.</p>';
-        return;
-      }
-
-      bulkFailureList.innerHTML = failures.map(function(failure) {
-        return [
-          '<article class="bulk-report-item bulk-report-item--failure">',
-          '<div class="bulk-report-item__header">',
-          '<h4>' + escapeHtml(failure.owner + "/" + failure.repo_name) + '</h4>',
-          '</div>',
-          '<p class="bulk-report-item__meta">' + escapeHtml(failure.error || "Unknown error") + '</p>',
-          '</article>'
-        ].join("");
-      }).join("");
-    }
-
-    function renderBulkSkipped(result) {
-      const skipped = result.skipped_repositories || [];
-      if (!skipped.length) {
-        bulkSkippedList.innerHTML = '<p class="scan-empty">No skipped repositories.</p>';
-        return;
-      }
-
-      bulkSkippedList.innerHTML = skipped.map(function(item) {
-        return [
-          '<article class="bulk-report-item">',
-          '<div class="bulk-report-item__header">',
-          '<h4>' + escapeHtml(item.owner + "/" + item.repo_name) + '</h4>',
-          '<span class="modal__meta-item">Skipped</span>',
-          '</div>',
-          '<p class="bulk-report-item__meta">' + escapeHtml(item.error || "Skipped by user.") + '</p>',
-          '</article>'
-        ].join("");
-      }).join("");
-    }
-
-    function renderBulkLogs(job) {
-      const logs = job.logs || [];
-      bulkScanLog.textContent = logs.length ? logs.join("\n") : "No logs yet.";
-      bulkScanLog.scrollTop = bulkScanLog.scrollHeight;
-    }
-
-    async function pollBulkScanJob(jobId) {
-      try {
-        const response = await fetch("/scan-all/" + encodeURIComponent(jobId));
-        const result = await response.json();
-        if (!response.ok) {
-          throw new Error(result.error || "Unable to load bulk scan status.");
-        }
-
-        activeBulkScanJobId = jobId;
-        renderBulkLogs(result);
-        renderBulkCurrentRepo(result);
-        renderBulkPending(result);
-        renderBulkRepositories(result);
-        renderBulkFailures(result);
-        renderBulkSkipped(result);
-        bulkScanSummary.textContent =
-          "Scanned " + (result.scanned_repositories || 0) +
-          " of " + (result.total_repositories || 0) +
-          " repositories. Failed: " + (result.failed_repositories || 0) + ".";
-
-        if (result.status === "completed" && result.report) {
-          stopBulkScanPolling();
-          bulkScanModalTitle.textContent = "Bulk scan report";
-          renderBulkMeta(result.report);
-          bulkScanSummary.textContent = result.report.total_findings
-            ? "The full scan completed and found " + result.report.total_findings + " potential issue(s) across your repositories."
-            : "The full scan completed and no vulnerabilities were found.";
-          renderBulkCurrentRepo({ status: "completed" });
-          renderBulkPending({ pending_repositories: [] });
-          renderBulkRepositories(result.report);
-          renderBulkFailures(result.report);
-          renderBulkSkipped(result.report);
-
-          if (result.report.download_urls) {
-            bulkViewJson.dataset.reportViewJson = (result.report.view_urls || {}).json || "";
-            bulkDownloadJson.href = result.report.download_urls.json;
-            bulkViewPdf.dataset.reportViewPdf = (result.report.view_urls || {}).pdf || "";
-            bulkDownloadPdf.href = result.report.download_urls.pdf;
-            setActionState(bulkViewJson, true);
-            bulkDownloadJson.classList.remove("is-disabled");
-            setActionState(bulkViewPdf, true);
-            bulkDownloadPdf.classList.remove("is-disabled");
-          }
-          return;
-        }
-
-        if (result.status === "failed") {
-          stopBulkScanPolling();
-          throw new Error(result.error || "Bulk scan failed.");
-        }
-
-        bulkScanPollTimer = window.setTimeout(function() {
-          pollBulkScanJob(jobId);
-        }, 1200);
-      } catch (error) {
-        stopBulkScanPolling();
-        bulkScanSummary.textContent = "The full scan could not be completed.";
-        bulkReportList.innerHTML = '<p class="scan-empty">' + escapeHtml(error.message) + "</p>";
-        bulkFailureList.innerHTML = '<p class="scan-empty">No repository-level details available.</p>';
-        bulkSkippedList.innerHTML = '<p class="scan-empty">No repository-level details available.</p>';
-        bulkScanLog.textContent += "\n" + error.message;
-        renderBulkCurrentRepo({ status: "failed" });
-      }
-    }
-
-    async function requestBulkSkip(owner, repo) {
-      if (!activeBulkScanJobId) {
-        return;
-      }
-
-      try {
-        const response = await fetch("/scan-all/" + encodeURIComponent(activeBulkScanJobId) + "/skip", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            owner: owner,
-            repo_name: repo
-          })
-        });
-        const result = await response.json();
-        if (!response.ok) {
-          throw new Error(result.error || "Unable to skip repository.");
-        }
-      } catch (error) {
-        bulkScanLog.textContent += "\n" + error.message;
-      }
-    }
-
-    document.querySelectorAll(".repo-card__details-button").forEach(function(button) {
-      button.addEventListener("click", async function(event) {
-        event.preventDefault();
-
-        const owner = button.dataset.owner;
-        const repo = button.dataset.repo;
-        setLoadingState(repo);
-        openModal();
-
-        try {
-          const response = await fetch("/repo-details/" + encodeURIComponent(owner) + "/" + encodeURIComponent(repo));
-          if (!response.ok) {
-            throw new Error("Unable to load repository details.");
-          }
-
-          const details = await response.json();
-          modalTitle.textContent = details.full_name || details.name;
-          renderMeta(details);
-          modalDescription.textContent = details.description || "No description provided.";
-          modalReadme.textContent = details.readme || "README not available for this repository.";
-          modalLink.href = details.html_url || "#";
-        } catch (error) {
-          modalDescription.textContent = "Repository details could not be loaded.";
-          modalReadme.textContent = error.message;
-        }
-      });
-    });
-
-    modal.addEventListener("click", function(event) {
-      if (event.target.dataset.closeModal === "true") {
-        closeModal();
-      }
-    });
-
-    document.querySelectorAll(".scan-button").forEach(function(button) {
-      button.addEventListener("click", async function() {
-        const owner = button.dataset.owner;
-        const repo = button.dataset.repo;
-        const repoUrl = button.dataset.repoUrl;
-
-        setScanLoadingState(repo);
-        openScanModal();
-
-        try {
-          const response = await fetch("/scan", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-              owner: owner,
-              repo_name: repo,
-              repo_url: repoUrl
-            })
-          });
-
-          const result = await response.json();
-          if (!response.ok) {
-            throw new Error(result.details || result.error || "Scan failed.");
-          }
-
-          scanModalTitle.textContent = "Scan results for " + (result.repo_name || repo);
-          renderScanMeta(result);
-          scanSummary.textContent = result.total_findings
-            ? "The scan completed and found " + result.total_findings + " potential issue(s)."
-            : "The scan completed and no vulnerabilities were found.";
-          renderFindings(result);
-          scanOutput.textContent = result.command_output || "No scanner output captured.";
-          
-          // Show and configure report buttons
-          const reportUrls = result.report_urls || {};
-          scanViewJson.hidden = false;
-          scanViewPdf.hidden = false;
-          scanDownloadJson.hidden = false;
-          scanDownloadPdf.hidden = false;
-          
-          scanViewJson.dataset.reportViewJson = reportUrls.view_json || "";
-          scanDownloadJson.href = reportUrls.download_json || "#";
-          scanViewPdf.dataset.reportViewPdf = reportUrls.view_pdf || "";
-          scanDownloadPdf.href = reportUrls.download_pdf || "#";
-        } catch (error) {
-          scanSummary.textContent = "The scan could not be completed.";
-          scanFindings.innerHTML = '<p class="scan-empty">' + escapeHtml(error.message) + "</p>";
-          scanOutput.textContent = error.message;
-        }
-      });
-    });
-
-    scanModal.addEventListener("click", function(event) {
-      if (event.target.dataset.closeScanModal === "true") {
-        closeScanModal();
-      }
-    });
-
-    // Wire scan report buttons
-    scanViewJson.addEventListener("click", function() {
-      if (scanViewJson.classList.contains("is-disabled")) {
-        return;
-      }
-      const url = scanViewJson.dataset.reportViewJson;
-      if (url) {
-        openJsonReport(url, "Scan JSON Report");
-      }
-    });
-
-    scanViewPdf.addEventListener("click", function() {
-      if (scanViewPdf.classList.contains("is-disabled")) {
-        return;
-      }
-      const url = scanViewPdf.dataset.reportViewPdf;
-      if (url) {
-        openPdfReport(url, "Scan PDF Report");
-      }
-    });
-
-    scanAllButton.addEventListener("click", async function() {
-      stopBulkScanPolling();
-      activeBulkScanJobId = null;
-      setBulkLoadingState();
-      openBulkScanModal();
-
-      try {
-        const visibility = repoVisibilityFilter.value || "both";
-        const response = await fetch("/scan-all", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({
-            visibility: visibility
-          })
-        });
-        const result = await response.json();
-        if (!response.ok) {
-          throw new Error(result.error || "Bulk scan failed.");
-        }
-        activeBulkScanJobId = result.job_id;
-        bulkScanSummary.textContent =
-          "Bulk scan started for " + result.total_repositories + " " + visibility + " repositories.";
-        pollBulkScanJob(result.job_id);
-      } catch (error) {
-        stopBulkScanPolling();
-        bulkScanSummary.textContent = "The full scan could not be completed.";
-        bulkReportList.innerHTML = '<p class="scan-empty">' + escapeHtml(error.message) + "</p>";
-        bulkFailureList.innerHTML = '<p class="scan-empty">No repository-level details available.</p>';
-        bulkSkippedList.innerHTML = '<p class="scan-empty">No repository-level details available.</p>';
-        bulkScanLog.textContent = error.message;
-      }
-    });
-
-    bulkViewJson.addEventListener("click", function() {
-      if (bulkViewJson.classList.contains("is-disabled")) {
-        return;
-      }
-      openJsonReport(bulkViewJson.dataset.reportViewJson, "Bulk JSON report");
-    });
-
-    bulkViewPdf.addEventListener("click", function() {
-      if (bulkViewPdf.classList.contains("is-disabled")) {
-        return;
-      }
-      openPdfReport(bulkViewPdf.dataset.reportViewPdf, "Bulk PDF report");
-    });
-
-    skipCurrentButton.addEventListener("click", function() {
-      if (skipCurrentButton.classList.contains("is-disabled") || !activeBulkScanJobId) {
-        return;
-      }
-
-      const currentRepo = bulkCurrentRepo.querySelector("h4");
-      if (!currentRepo) {
-        return;
-      }
-
-      const parts = currentRepo.textContent.split("/");
-      const owner = parts[0] || "";
-      const repo = parts.slice(1).join("/") || "";
-      requestBulkSkip(owner, repo);
-    });
-
-    bulkScanModal.addEventListener("click", function(event) {
-      if (event.target.dataset.closeBulkScanModal === "true") {
-        closeBulkScanModal();
-      }
-    });
-
-    reportViewerModal.addEventListener("click", function(event) {
-      if (event.target.dataset.closeReportViewer === "true") {
-        closeReportViewer();
-      }
-    });
-
-    document.addEventListener("keydown", function(event) {
-      if (event.key === "Escape" && !modal.hidden) {
-        closeModal();
-      }
-      if (event.key === "Escape" && !scanModal.hidden) {
-        closeScanModal();
-      }
-      if (event.key === "Escape" && !bulkScanModal.hidden) {
-        closeBulkScanModal();
-      }
-      if (event.key === "Escape" && !reportViewerModal.hidden) {
-        closeReportViewer();
-      }
-    });
-
-    repoVisibilityFilter.addEventListener("change", applyVisibilityFilter);
-
-    repoSearch.addEventListener("input", debounceSearch);
-    repoSearch.addEventListener("focus", function() {
-      if (repoSearch.value.trim().length >= 2) {
-        searchResults.hidden = false;
-      }
     });
 
     document.addEventListener("click", function(event) {
-      if (!event.target.closest(".search-container")) {
-        searchResults.hidden = true;
-      }
+    if (!event.target.closest(".search-container")) {
+    searchResults.hidden = true;
+    }
     });
 
     repoVisibilityFilter.addEventListener("change", function() {
-      if (repoSearch.value.trim().length >= 2) {
-        debounceSearch();
-      }
+    if (repoSearch.value.trim().length >= 2) {
+    debounceSearch();
+    }
     });
-  </script>
-</body>
-</html>
+    </script>
+    </body>
+
+    </html>

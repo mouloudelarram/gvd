@@ -20,17 +20,13 @@
     <div class="header-container">
       <div class="header-left">
         <div class="brand">
-          <div class="brand-logo">
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="32" height="32" rx="6" fill="var(--color-accent)"/>
-              <path d="M16 6L10 11V21L16 26L22 21V11L16 6Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M13 15L14.5 16.5L19 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+          <div class="">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="GVD Logo" width="75" height="75">
           </div>
-          <h1 class="brand-name">GVD</h1>
+          <h1 class="brand-name"></h1>
         </div>
       </div>
-      
+      <!--
       <div class="header-center">
         {% block header_search %}
         <div class="search-container">
@@ -43,7 +39,7 @@
         </div>
         {% endblock %}
       </div>
-      
+      -->
       <div class="header-right">
         {% block header_actions %}
         <div class="header-actions">
@@ -105,7 +101,7 @@
   <footer class="app-footer" role="contentinfo">
     <div class="footer-container">
       <div class="footer-left">
-        <p>&copy; 2024 GVD. Built for developers who value security.</p>
+        <p>&copy; 2026 GVD. Built for developers who value security.</p>
       </div>
       <div class="footer-right">
         <a href="#" class="footer-link">Documentation</a>

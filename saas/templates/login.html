@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,12 +11,14 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
 </head>
+
 <body class="auth-page">
   <a href="#main-content" class="skip-to-content">Skip to main content</a>
-  
+
   <div class="auth-container">
     <!-- Left Side - Hero Section -->
     <div class="auth-hero">
+      <!--
       <div class="hero-content">
         <div class="hero-brand">
           <div class="logo-icon">
@@ -105,75 +108,80 @@
           </div>
         </div>
       </div>
+      -->
     </div>
-    
+
     <!-- Right Side - Auth Form -->
     <div class="auth-form-container" id="main-content">
       <div class="auth-card">
         <div class="auth-header">
           <div class="auth-logo">
-            <div class="logo-icon">
-              <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="32" height="32" rx="6" fill="var(--color-accent)"/>
-                <path d="M16 6L10 11V21L16 26L22 21V11L16 6Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M13 15L14.5 16.5L19 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
+            <div class="">
+              <img src="{{ url_for('static', filename='images/logo.png') }}" alt="GVD Logo" width="150px" height="150px">
             </div>
             <h1 class="auth-title">Welcome to GVD</h1>
           </div>
-          <p class="auth-subtitle">Connect your GitHub account to start scanning repositories for security vulnerabilities</p>
+          <p class="auth-subtitle">Connect your GitHub account to start scanning repositories for security
+            vulnerabilities</p>
         </div>
-        
+
         <div class="auth-methods">
           <a href="{{ login_url }}" class="btn btn-primary btn-full btn-github">
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 0C4.477 0 0 4.477 0 10C0 14.237 3.438 18.092 7.5 18.875V12.5H5.5V10H7.5V8C7.5 6.062 8.562 5 10.5 5C11.5 5 12.5 5.188 12.5 5.188V7.5H11.375C10.312 7.5 10 8.125 10 8.75V10H12.5L12 12.5H10V18.875C14.062 18.092 17.5 14.237 17.5 10C17.5 4.477 13.023 0 10 0Z" fill="currentColor"/>
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path
+                d="M12 .5C5.648.5.5 5.648.5 12a11.5 11.5 0 0 0 7.863 10.924c.575.106.787-.25.787-.556 0-.275-.012-1.187-.018-2.15-3.2.694-3.877-1.356-3.877-1.356-.525-1.337-1.282-1.693-1.282-1.693-1.05-.718.08-.703.08-.703 1.162.082 1.774 1.193 1.774 1.193 1.032 1.768 2.707 1.257 3.367.962.105-.747.404-1.258.735-1.547-2.554-.29-5.238-1.277-5.238-5.684 0-1.255.45-2.282 1.188-3.087-.119-.29-.515-1.46.112-3.045 0 0 .968-.31 3.174 1.18a10.98 10.98 0 0 1 5.778 0c2.205-1.49 3.172-1.18 3.172-1.18.628 1.585.232 2.755.114 3.045.74.805 1.186 1.832 1.186 3.087 0 4.418-2.689 5.39-5.25 5.675.415.357.785 1.058.785 2.134 0 1.542-.014 2.784-.014 3.164 0 .309.21.668.793.555A11.503 11.503 0 0 0 23.5 12C23.5 5.648 18.352.5 12 .5Z" />
             </svg>
             Continue with GitHub
           </a>
         </div>
-        
+
         <div class="auth-divider">
-          <span>or</span>
+          <span>see more</span>
         </div>
-        
+
         <div class="auth-benefits">
           <h3>Why choose GVD?</h3>
           <ul class="benefits-list">
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M13.5 4.5L6 12L2.5 8.5" stroke="var(--color-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M13.5 4.5L6 12L2.5 8.5" stroke="var(--color-success)" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
               </svg>
               <span>Comprehensive security scanning</span>
             </li>
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M13.5 4.5L6 12L2.5 8.5" stroke="var(--color-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M13.5 4.5L6 12L2.5 8.5" stroke="var(--color-success)" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
               </svg>
               <span>Local processing, no data upload</span>
             </li>
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M13.5 4.5L6 12L2.5 8.5" stroke="var(--color-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M13.5 4.5L6 12L2.5 8.5" stroke="var(--color-success)" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
               </svg>
               <span>Real-time vulnerability detection</span>
             </li>
             <li>
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M13.5 4.5L6 12L2.5 8.5" stroke="var(--color-success)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M13.5 4.5L6 12L2.5 8.5" stroke="var(--color-success)" stroke-width="2" stroke-linecap="round"
+                  stroke-linejoin="round" />
               </svg>
               <span>Professional security reports</span>
             </li>
           </ul>
         </div>
-        
+
         <div class="auth-footer">
           <p class="auth-terms">
-            By continuing, you agree to our <a href="#" class="auth-link">Terms of Service</a> and <a href="#" class="auth-link">Privacy Policy</a>
+            By continuing, you agree to our <a href="#" class="auth-link">Terms of Service</a> and <a href="#"
+              class="auth-link">Privacy Policy</a>
           </p>
           <p class="auth-security">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M7 1L2 4V7C2 9.5 7 13 7 13C7 13 12 9.5 12 7V4L7 1Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M7 1L2 4V7C2 9.5 7 13 7 13C7 13 12 9.5 12 7V4L7 1Z" stroke="currentColor" stroke-width="1.5"
+                stroke-linecap="round" stroke-linejoin="round" />
             </svg>
             Secure OAuth authentication
           </p>
@@ -182,4 +190,5 @@
     </div>
   </div>
 </body>
+
 </html>

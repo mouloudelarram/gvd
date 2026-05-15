@@ -15,6 +15,16 @@ window.GVD.dashboard = {
     searchHasMore: false
   },
 
+  bulkScanState: {
+    scanning: false,
+    completed: 0,
+    failures: 0,
+    totalFindings: 0,
+    criticalCount: 0,
+    startTime: null,
+    repos: []
+  },
+
   /**
    * Initialize dashboard functionality
    */
@@ -512,26 +522,140 @@ window.GVD.dashboard = {
    * Handle scan all repositories
    */
   handleScanAll: async function() {
-    const button = document.getElementById('scan-all-button');
-    if (!button) return;
+    // Open modal immediately
+    window.GVD.modal.open('bulk-scan-modal');
+    
+    // Reset state
+    this.bulkScanState = {
+      scanning: true,
+      completed: 0,
+      failures: 0,
+      totalFindings: 0,
+      criticalCount: 0,
+      startTime: Date.now(),
+      repos: Array.from(document.querySelectorAll('.repo-card')).map(card => ({
+        owner: card.dataset.owner,
+        name: card.querySelector('.repo-name')?.textContent?.trim(),
+        repoUrl: card.dataset.repoUrl
+      }))
+    };
 
-    try {
-      button.disabled = true;
-      window.GVD.loading.show(button);
-      
-      window.GVD.toast.show('Starting bulk scan...', 'info');
-      
-      // This would typically trigger a bulk scan endpoint
-      // For now, show a simple message
-      window.GVD.toast.show('Bulk scan functionality coming soon!', 'info');
-      
-    } catch (error) {
-      console.error('Bulk scan failed:', error);
-      window.GVD.toast.show('Failed to start bulk scan', 'error');
-    } finally {
-      button.disabled = false;
-      window.GVD.loading.hide(button);
+    // Reset UI
+    this.resetBulkScanUI();
+
+    // Start sequential scanning
+    this.startBulkScan();
+  },
+
+  /**
+   * Reset bulk scan UI
+   */
+  resetBulkScanUI: function() {
+    document.getElementById('bulk-progress-bar').style.width = '0%';
+    document.getElementById('bulk-progress-text').textContent = '0 / ' + this.bulkScanState.repos.length + ' repositories scanned';
+    document.getElementById('bulk-stat-completed').textContent = '0';
+    document.getElementById('bulk-stat-findings').textContent = '0';
+    document.getElementById('bulk-stat-critical').textContent = '0';
+    document.getElementById('bulk-stat-failures').textContent = '0';
+    
+    const logsPanel = document.getElementById('bulk-scan-logs');
+    logsPanel.innerHTML = '<div class="log-entry log-entry-info"><span class="log-time">00:00:00</span><span class="log-message">Initializing bulk scan...</span></div>';
+  },
+
+  /**
+   * Start bulk scanning process
+   */
+  startBulkScan: async function() {
+    const state = this.bulkScanState;
+    const totalRepos = state.repos.length;
+
+    if (totalRepos === 0) {
+      this.addBulkLog('No repositories to scan', 'warning');
+      return;
     }
+
+    this.addBulkLog('Starting scan across ' + totalRepos + ' repositories', 'info');
+
+    // Iterate repositories sequentially
+    for (let i = 0; i < totalRepos; i++) {
+      const repo = state.repos[i];
+      
+      if (!state.scanning) {
+        this.addBulkLog('Scan cancelled by user', 'warning');
+        break;
+      }
+
+      this.addBulkLog('Scanning: ' + repo.owner + '/' + repo.name, 'info');
+
+      try {
+        const result = await window.GVD.utils.api.post('/scan', {
+          owner: repo.owner,
+          repo_name: repo.name,
+          repo_url: repo.repoUrl
+        });
+
+        // Update state
+        state.completed++;
+        state.totalFindings += result.total_findings || 0;
+        const counts = result.severity_counts || {};
+        state.criticalCount += (counts.CRITICAL || 0) + (counts.HIGH || 0);
+
+        const findings = result.total_findings || 0;
+        const message = findings > 0 
+          ? findings + ' finding' + (findings !== 1 ? 's' : '')
+          : 'clean';
+        
+        this.addBulkLog('✓ ' + repo.owner + '/' + repo.name + ': ' + message, 'success');
+      } catch (error) {
+        state.failures++;
+        this.addBulkLog('✗ ' + repo.owner + '/' + repo.name + ': ' + error.message, 'error');
+      }
+
+      // Update progress UI
+      this.updateBulkProgress();
+    }
+
+    // Complete
+    state.scanning = false;
+    const elapsed = Math.floor((Date.now() - state.startTime) / 1000);
+    this.addBulkLog('Scan complete in ' + elapsed + 's (' + state.completed + ' succeeded, ' + state.failures + ' failed)', 'success');
+  },
+
+  /**
+   * Update bulk progress UI
+   */
+  updateBulkProgress: function() {
+    const state = this.bulkScanState;
+    const total = state.repos.length;
+    const percent = (state.completed / total) * 100;
+
+    document.getElementById('bulk-progress-bar').style.width = percent + '%';
+    document.getElementById('bulk-progress-text').textContent = state.completed + ' / ' + total + ' repositories scanned';
+    document.getElementById('bulk-stat-completed').textContent = state.completed;
+    document.getElementById('bulk-stat-findings').textContent = state.totalFindings;
+    document.getElementById('bulk-stat-critical').textContent = state.criticalCount;
+    document.getElementById('bulk-stat-failures').textContent = state.failures;
+  },
+
+  /**
+   * Add log entry
+   */
+  addBulkLog: function(message, type = 'info') {
+    const logsPanel = document.getElementById('bulk-scan-logs');
+    if (!logsPanel) return;
+
+    const elapsed = Math.floor((Date.now() - (this.bulkScanState?.startTime || Date.now())) / 1000);
+    const hours = Math.floor(elapsed / 3600);
+    const minutes = Math.floor((elapsed % 3600) / 60);
+    const seconds = elapsed % 60;
+    const timeStr = String(hours).padStart(2, '0') + ':' + String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+
+    const entry = document.createElement('div');
+    entry.className = 'log-entry log-entry-' + type;
+    entry.innerHTML = '<span class="log-time">' + timeStr + '</span><span class="log-message">' + window.GVD.utils.escapeHtml(message) + '</span>';
+    
+    logsPanel.appendChild(entry);
+    logsPanel.scrollTop = logsPanel.scrollHeight;
   },
 
   /**

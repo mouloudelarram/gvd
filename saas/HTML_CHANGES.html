@@ -1,0 +1,126 @@
+<!-- 
+GVD Enterprise Bulk Scanning - HTML Template Changes
+Add these elements to saas/templates/dashboard.html
+-->
+
+<!-- MODIFY BULK SCAN MODAL (update existing one around line 359) -->
+
+<div class="modal-overlay" id="bulk-scan-modal" hidden>
+  <div class="modal modal-large">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">Bulk Repository Scan</h2>
+        <p class="bulk-scan-subtitle">Real-time vulnerability scanning across all repositories</p>
+      </div>
+      <button class="btn btn-ghost btn-sm" data-close-scan-modal="true">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 4L4 12M4 4l8 8" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round" />
+        </svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <!-- Progress Section -->
+      <div class="bulk-scan-progress-section">
+        <div class="bulk-scan-progress-bar">
+          <div class="progress-bar" id="bulk-progress-bar" style="width: 0%"></div>
+        </div>
+        <div class="bulk-scan-progress-text">
+          <span id="bulk-progress-text">0 / 0 repositories scanned</span>
+        </div>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="bulk-stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Completed</div>
+          <div class="stat-value" id="bulk-stat-completed">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Findings</div>
+          <div class="stat-value" id="bulk-stat-findings">0</div>
+        </div>
+        <div class="stat-card stat-card-critical">
+          <div class="stat-label">High Risk</div>
+          <div class="stat-value" id="bulk-stat-critical">0</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Failures</div>
+          <div class="stat-value" id="bulk-stat-failures">0</div>
+        </div>
+      </div>
+
+      <!-- Live Logs -->
+      <div class="bulk-scan-logs-section">
+        <h3 class="bulk-logs-title">Scan Activity</h3>
+        <div class="bulk-scan-logs" id="bulk-scan-logs">
+          <div class="log-entry log-entry-info">
+            <span class="log-time">00:00:00</span>
+            <span class="log-message">Initializing bulk scan...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Report Section (shown when scan completes) -->
+      <div id="bulk-scan-report-section" hidden>
+        <!-- Report content inserted here by JavaScript -->
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" id="bulk-scan-close-btn" data-close-scan-modal="true">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD TO METRICS BAR (modify existing metric-card for "Scanned Today") -->
+<!-- Change the scanned today metric to have a data attribute for easy DOM targeting -->
+<div class="metric-card" data-metric="scanned-today">
+  <div class="metric-icon metric-icon-scanned">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 3" />
+    </svg>
+  </div>
+  <div class="metric-content">
+    <div class="metric-value">0</div>
+    <div class="metric-label">Scanned Today</div>
+  </div>
+</div>
+
+<!-- ADD SIMILAR DATA ATTRIBUTE TO HIGH RISK FINDINGS METRIC -->
+<div class="metric-card metric-card-danger" data-metric="high-risk">
+  <div class="metric-icon metric-icon-risk">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3L2 20h20L12 3z" />
+      <path d="M12 9v4" />
+      <circle cx="12" cy="17" r="1" />
+    </svg>
+  </div>
+  <div class="metric-content">
+    <div class="metric-value">0</div>
+    <div class="metric-label">High Risk Findings</div>
+  </div>
+</div>
+
+<!-- ADD NOTIFICATION CONTAINER (add near top of page, after dashboard-container opening) -->
+<div id="notification-container" class="notification-container"></div>
+
+<!-- ADD TO DASHBOARD ACTIONS (if not already there) -->
+<!-- This should be in the dashboard-header next to "Scan All" button -->
+<div class="dashboard-actions">
+  <!-- ... existing filter controls ... -->
+  
+  <button class="btn btn-primary" id="scan-all-button" type="button">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 4h6v6H4z" />
+      <path d="M14 4h6v6h-6z" />
+      <path d="M4 14h6v6H4z" />
+      <path d="M17 14v6" />
+      <path d="M14 17h6" />
+    </svg>
+    Scan All
+  </button>
+</div>
