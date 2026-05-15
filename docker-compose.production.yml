@@ -106,7 +106,7 @@ services:
     
     volumes:
       # Application code
-      - ./saas:/app:ro
+      #- ./saas:/app:ro
       
       # Persistent data volumes
       - gvd-scan-reports:/app/scan_reports
@@ -164,7 +164,7 @@ services:
     
     volumes:
       # Application code
-      - ./cli:/app:ro
+      # - ./cli:/app:ro
       
       # Shared volumes with main app
       - gvd-scan-reports:/app/reports
