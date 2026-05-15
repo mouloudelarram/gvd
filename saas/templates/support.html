@@ -1,0 +1,328 @@
+{% extends "base.html" %}
+
+{% block title %}Support - GVD{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/support.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="support-container">
+  <!-- Header -->
+  <div class="support-header">
+    <h1>Support & Help</h1>
+    <p>Get answers to common questions and find solutions to issues</p>
+  </div>
+
+  <!-- Quick Help Cards -->
+  <div class="support-quick-help">
+    <div class="quick-help-card">
+      <div class="card-icon">❓</div>
+      <h3>Frequently Asked Questions</h3>
+      <p>Find answers to common questions about GVD</p>
+      <a href="#faq" class="card-link">View FAQ</a>
+    </div>
+    
+    <div class="quick-help-card">
+      <div class="card-icon">🔧</div>
+      <h3>Troubleshooting</h3>
+      <p>Resolve common issues and errors</p>
+      <a href="#troubleshooting" class="card-link">Troubleshoot</a>
+    </div>
+    
+    <div class="quick-help-card">
+      <div class="card-icon">📖</div>
+      <h3>Documentation</h3>
+      <p>Learn how to use GVD features</p>
+      <a href="{{ url_for('documentation') }}" class="card-link">Read Docs</a>
+    </div>
+    
+    <div class="quick-help-card">
+      <div class="card-icon">💬</div>
+      <h3>Contact Us</h3>
+      <p>Reach out to our support team</p>
+      <a href="#contact" class="card-link">Get Help</a>
+    </div>
+  </div>
+
+  <div class="support-content">
+    <!-- Troubleshooting Section -->
+    <section id="troubleshooting" class="support-section">
+      <h2>Troubleshooting</h2>
+      
+      <div class="support-issue">
+        <h3>GitHub Authentication Failed</h3>
+        <div class="issue-details">
+          <p><strong>Error:</strong> "GitHub authentication failed" or "Invalid state parameter"</p>
+          <p><strong>Solutions:</strong></p>
+          <ul class="support-list">
+            <li>Ensure you have a valid GitHub account</li>
+            <li>Check that cookies are enabled in your browser</li>
+            <li>Clear your browser cache and cookies, then try again</li>
+            <li>Try in incognito/private mode to eliminate browser extensions</li>
+            <li>Ensure your GitHub account hasn't been temporarily restricted</li>
+            <li>Verify your internet connection is stable</li>
+          </ul>
+          <p><strong>Still not working?</strong> <a href="#contact" class="support-link">Contact support</a></p>
+        </div>
+      </div>
+
+      <div class="support-issue">
+        <h3>Repository Scan Fails</h3>
+        <div class="issue-details">
+          <p><strong>Error:</strong> "Scan failed" or "Repository clone failed"</p>
+          <p><strong>Common Causes and Solutions:</strong></p>
+          <ul class="support-list">
+            <li><strong>No Access:</strong> Verify you have access to the repository on GitHub. Public repositories require no special permissions; private repositories require authorization.</li>
+            <li><strong>Network Error:</strong> Check your internet connection. Try again after a few seconds.</li>
+            <li><strong>Repository Too Large:</strong> Very large repositories (>1GB) may take longer or fail. Try a smaller repository first.</li>
+            <li><strong>Permission Issue:</strong> Ensure GitHub OAuth token has repository access permission. Try logging out and logging back in.</li>
+            <li><strong>Server Issue:</strong> If problem persists, GVD servers may be experiencing issues. Try again later.</li>
+          </ul>
+          <p><strong>Still not working?</strong> <a href="#contact" class="support-link">Contact support</a></p>
+        </div>
+      </div>
+
+      <div class="support-issue">
+        <h3>Scan Takes Too Long</h3>
+        <div class="issue-details">
+          <p><strong>Reason:</strong> Scan time depends on repository size and complexity.</p>
+          <ul class="support-list">
+            <li>Small repositories (&lt;10MB): Usually &lt;30 seconds</li>
+            <li>Medium repositories (10-100MB): Usually 1-5 minutes</li>
+            <li>Large repositories (&gt;100MB): Can take 10+ minutes</li>
+          </ul>
+          <p><strong>Tips to Speed Up Scans:</strong></p>
+          <ul class="support-list">
+            <li>Scan during off-peak hours when servers aren't busy</li>
+            <li>Close other browser tabs to free up system resources</li>
+            <li>Use a stable, high-speed internet connection</li>
+            <li>Scan public repositories (faster than private)</li>
+          </ul>
+          <p><strong>Options:</strong></p>
+          <ul class="support-list">
+            <li>You can stop the scan anytime and try again later</li>
+            <li>Large repositories may need to be scanned in segments</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="support-issue">
+        <h3>Can't Find My Repository</h3>
+        <div class="issue-details">
+          <p><strong>Solutions:</strong></p>
+          <ul class="support-list">
+            <li><strong>Check Access:</strong> Verify the repository is accessible from your GitHub account. You must own it or be a collaborator.</li>
+            <li><strong>Filter Settings:</strong> Ensure you're not filtering by visibility. Try "All Repositories" filter.</li>
+            <li><strong>Search:</strong> Use the search box to search by repository name.</li>
+            <li><strong>Pagination:</strong> Click "See more" to load additional repositories.</li>
+            <li><strong>Refresh:</strong> Log out and log back in to refresh your repository list.</li>
+            <li><strong>Archived Repos:</strong> Archived repositories may not appear in the list.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="support-issue">
+        <h3>Notifications Aren't Working</h3>
+        <div class="issue-details">
+          <p><strong>Solutions:</strong></p>
+          <ul class="support-list">
+            <li>Check that JavaScript is enabled in your browser</li>
+            <li>Ensure browser notifications haven't been blocked for this site</li>
+            <li>Try refreshing the page</li>
+            <li>Look for the notification bell icon (🔔) in the top navigation - click it to see pending notifications</li>
+            <li>Try in incognito/private mode to test without extensions</li>
+            <li>Check your browser's console (F12 Developer Tools) for JavaScript errors</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="support-issue">
+        <h3>Session Expired - Need to Log In Again</h3>
+        <div class="issue-details">
+          <p><strong>Why this happens:</strong> GVD sessions automatically expire after 24 hours of inactivity for security.</p>
+          <p><strong>Solution:</strong> Simply log in again using "Continue with GitHub"</p>
+          <p><strong>Note:</strong> All temporary data (scan reports, notifications) are cleared when your session expires. This is by design for privacy protection.</p>
+        </div>
+      </div>
+
+      <div class="support-issue">
+        <h3>Reports Won't Download</h3>
+        <div class="issue-details">
+          <p><strong>Solutions:</strong></p>
+          <ul class="support-list">
+            <li>Verify your browser allows downloads from this site</li>
+            <li>Check your browser's download folder - file may already be downloaded</li>
+            <li>Try a different browser (Chrome, Firefox, Safari, Edge)</li>
+            <li>Try downloading the JSON report (it's lighter weight than PDF)</li>
+            <li>Check that your internet connection is stable</li>
+            <li>Disable browser extensions that might interfere with downloads</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="support-issue">
+        <h3>Finding More Vulnerabilities Than Expected</h3>
+        <div class="issue-details">
+          <p><strong>Why this happens:</strong> GVD performs comprehensive security scanning and may detect:</p>
+          <ul class="support-list">
+            <li>Secrets in git history (even if deleted from current version)</li>
+            <li>Credentials in comments and documentation</li>
+            <li>Test/dummy credentials that look real</li>
+            <li>Patterns similar to real secrets but not actually sensitive</li>
+          </ul>
+          <p><strong>Next Steps:</strong></p>
+          <ul class="support-list">
+            <li>Review each finding carefully</li>
+            <li>Check if credentials have already been rotated</li>
+            <li>Clean git history if secrets are present in commits</li>
+            <li>Use .gitignore to prevent future commits of sensitive files</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="support-section">
+      <h2>Frequently Asked Questions</h2>
+
+      <div class="faq-item">
+        <h3>Is GVD free?</h3>
+        <p>Yes, GVD is completely free. You only need a GitHub account to get started.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>Does GVD upload my code to its servers?</h3>
+        <p>No. GVD uses a local-first approach. Your code is cloned locally, scanned locally, and then deleted. Only the security report is retained temporarily in your session.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>How long are my scan results kept?</h3>
+        <p>Scan results are stored in your session while you're logged in. When you log out or your session expires (24 hours), all results are automatically deleted.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>Can I scan private repositories?</h3>
+        <p>Yes. GVD can scan any repository you have access to on GitHub, including private repositories.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>How do I revoke GVD's access?</h3>
+        <p>
+          Go to <a href="https://github.com/settings/applications" target="_blank" class="support-link">GitHub Settings → Connected applications</a>, find GVD, and click "Revoke".
+        </p>
+      </div>
+
+      <div class="faq-item">
+        <h3>What information does GVD collect from me?</h3>
+        <p>GVD collects your GitHub profile information (username, email, avatar) and your GitHub access token. See our <a href="{{ url_for('privacy_policy') }}" class="support-link">Privacy Policy</a> for complete details.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>Can I schedule automatic scans?</h3>
+        <p>Currently, scans are manual. You initiate scans individually or use the bulk scan feature to scan all repositories at once.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>Is GVD accurate? Will it find all vulnerabilities?</h3>
+        <p>GVD uses pattern-based detection for known secret formats. No scanning tool is 100% effective - it may miss some vulnerabilities and have false positives. Always conduct additional security reviews.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>Can I share scan reports with my team?</h3>
+        <p>Yes. After a scan completes, download the JSON or PDF report and share it with team members. However, note that reports are session-based and may not be available after logout.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>What if I find a false positive?</h3>
+        <p>Review the finding carefully. If it's truly a false positive (not actually a security risk), you can dismiss it from the report or note it for your team.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>Is GVD GDPR compliant?</h3>
+        <p>Yes. GVD complies with GDPR and other privacy regulations. See our <a href="{{ url_for('privacy_policy') }}" class="support-link">Privacy Policy</a> for details.</p>
+      </div>
+
+      <div class="faq-item">
+        <h3>What are the severity levels?</h3>
+        <ul class="support-list">
+          <li><strong>Critical:</strong> Immediate threat (e.g., exposed database credentials)</li>
+          <li><strong>High:</strong> Serious issue (e.g., exposed API keys)</li>
+          <li><strong>Medium:</strong> Moderate concern (e.g., weak credentials)</li>
+          <li><strong>Low:</strong> Low priority (e.g., configuration issues)</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="support-section">
+      <h2>Contact Support</h2>
+      
+      <div class="support-contact">
+        <p>
+          If you can't find the answer to your question or need additional assistance, please reach out to our support team.
+        </p>
+
+        <div class="contact-methods">
+          <div class="contact-method">
+            <h4>📧 Email Support</h4>
+            <p>For inquiries and support requests:</p>
+            <p><a href="mailto:support@gvd.dev" class="support-link">support@gvd.dev</a></p>
+            <p><small>Response time: 24-48 hours</small></p>
+          </div>
+
+          <div class="contact-method">
+            <h4>🐛 Bug Reports</h4>
+            <p>Report bugs or issues you encounter:</p>
+            <p><a href="https://github.com/gvd/gvd/issues" target="_blank" class="support-link">GitHub Issues</a></p>
+            <p><small>Monitored by development team</small></p>
+          </div>
+
+          <div class="contact-method">
+            <h4>💡 Feature Requests</h4>
+            <p>Suggest new features or improvements:</p>
+            <p><a href="https://github.com/gvd/gvd/discussions" target="_blank" class="support-link">GitHub Discussions</a></p>
+            <p><small>Community feedback welcome</small></p>
+          </div>
+
+          <div class="contact-method">
+            <h4>🔐 Security Issues</h4>
+            <p>Report security vulnerabilities responsibly:</p>
+            <p><a href="mailto:security@gvd.dev" class="support-link">security@gvd.dev</a></p>
+            <p><small>Please do not file public issues for security matters</small></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- System Status -->
+    <section id="status" class="support-section">
+      <h2>System Status</h2>
+      
+      <div class="status-info">
+        <h3>GVD Service Status</h3>
+        <div class="status-indicator status-operational">
+          <span class="status-dot"></span>
+          <span class="status-text">All Systems Operational</span>
+        </div>
+        <p>
+          For real-time status updates and incident reports, visit our 
+          <a href="https://status.gvd.dev" target="_blank" class="support-link">Status Page</a>
+        </p>
+      </div>
+    </section>
+
+    <!-- Documentation Link -->
+    <section id="more-help" class="support-section">
+      <h2>More Help</h2>
+      <p>
+        For comprehensive documentation on using GVD, visit our 
+        <a href="{{ url_for('documentation') }}" class="support-link">Documentation Page</a>
+      </p>
+      <p>
+        For legal information, see our <a href="{{ url_for('terms_of_service') }}" class="support-link">Terms of Service</a> and <a href="{{ url_for('privacy_policy') }}" class="support-link">Privacy Policy</a>
+      </p>
+    </section>
+  </div>
+</div>
+{% endblock %}

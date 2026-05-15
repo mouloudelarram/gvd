@@ -80,6 +80,26 @@
   color: var(--color-text-primary);
 }
 
+/* Logo Link Styles */
+.logo-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-lg);
+  transition: all var(--transition-normal);
+  cursor: pointer;
+  outline: none;
+}
+
+.logo-link:hover {
+  opacity: 0.8;
+  transform: scale(1.05);
+}
+
+.logo-link:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-accent-light);
+}
+
 .brand-logo {
   width: 32px;
   height: 32px;

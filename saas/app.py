@@ -77,6 +77,52 @@ def before_request():
 
 BASE_DIR = Path(__file__).resolve().parent
 
+# ============================================================================
+# SESSION-BASED RESULT STORAGE & NOTIFICATIONS (Production-Grade)
+# ============================================================================
+
+# Session-based temporary result storage
+SESSION_SCAN_RESULTS = {}  # {session_id: {bulk_report_id: report}}
+SESSION_NOTIFICATIONS = {}  # {session_id: [notifications]}
+SESSION_DATA_LOCK = threading.Lock()
+
+
+def get_session_id():
+    """Get or create unique session identifier"""
+    if 'session_id' not in session:
+        session['session_id'] = uuid.uuid4().hex
+    return session['session_id']
+
+
+def cleanup_old_session_data(session_id):
+    """Clean up old session data on logout"""
+    with SESSION_DATA_LOCK:
+        SESSION_SCAN_RESULTS.pop(session_id, None)
+        SESSION_NOTIFICATIONS.pop(session_id, None)
+
+
+def add_session_notification(notification_type, title, message, data=None):
+    """Add notification to current session"""
+    session_id = get_session_id()
+    with SESSION_DATA_LOCK:
+        if session_id not in SESSION_NOTIFICATIONS:
+            SESSION_NOTIFICATIONS[session_id] = []
+        
+        notification = {
+            "id": uuid.uuid4().hex,
+            "type": notification_type,
+            "title": title,
+            "message": message,
+            "data": data or {},
+            "read": False,
+            "created_at": datetime.utcnow().isoformat() + "Z",
+            "timestamp": int(datetime.utcnow().timestamp() * 1000)
+        }
+        
+        SESSION_NOTIFICATIONS[session_id].append(notification)
+    
+    return notification
+
 def timeago_filter(date_string):
     """Convert a date string to a relative time format."""
     if not date_string:
@@ -669,7 +715,7 @@ def save_bulk_report(report):
     return report
 
 
-def run_bulk_scan_job(job_id, repos, token, visibility):
+def run_bulk_scan_job(job_id, repos, token, visibility, session_id=None):
     try:
         append_bulk_scan_log(job_id, f"Starting bulk scan for {len(repos)} repositories.")
         successes = []
@@ -793,6 +839,23 @@ def run_bulk_scan_job(job_id, repos, token, visibility):
             failed_repositories=report.get("failed_repositories", 0),
             updated_at=datetime.utcnow().isoformat() + "Z",
         )
+        
+        # NEW: Create completion notification
+        if session_id:
+            high_risk = sum(1 for r in successes for f in r.get("findings", []) 
+                          if f.get("severity") in ["CRITICAL", "HIGH"])
+            add_session_notification(
+                "scan_completed",
+                "Bulk Scan Completed",
+                f"{report.get('scanned_repositories', 0)} scanned, {report.get('failed_repositories', 0)} failed, {high_risk} high-risk findings",
+                {
+                    "job_id": job_id,
+                    "scanned": report.get('scanned_repositories', 0),
+                    "failed": report.get('failed_repositories', 0),
+                    "total_findings": report.get('total_findings', 0),
+                    "high_risk_findings": high_risk
+                }
+            )
     except Exception as exc:
         append_bulk_scan_log(job_id, f"Bulk scan crashed: {exc}")
         update_bulk_scan_job(
@@ -802,6 +865,15 @@ def run_bulk_scan_job(job_id, repos, token, visibility):
             pending_repositories=[],
             updated_at=datetime.utcnow().isoformat() + "Z",
         )
+        
+        # NEW: Create failure notification
+        if session_id:
+            add_session_notification(
+                "scan_failed",
+                "Bulk Scan Failed",
+                f"Scan encountered an error: {str(exc)[:100]}",
+                {"job_id": job_id, "error": str(exc)}
+            )
 
 
 @app.route("/scan", methods=["POST"])
@@ -918,6 +990,8 @@ def scan_all():
         return jsonify({"error": "No repositories available to scan."}), 400
 
     job_id = uuid.uuid4().hex
+    session_id = get_session_id()  # NEW: Get session ID
+    
     with BULK_SCAN_JOBS_LOCK:
         BULK_SCAN_JOBS[job_id] = {
             "job_id": job_id,
@@ -936,18 +1010,28 @@ def scan_all():
             "current_repo_key": None,
             "current_process": None,
             "skip_requests": set(),
+            "session_id": session_id,  # NEW: Store session ID
             "created_at": datetime.utcnow().isoformat() + "Z",
             "updated_at": datetime.utcnow().isoformat() + "Z",
         }
 
     worker = threading.Thread(
         target=run_bulk_scan_job,
-        args=(job_id, repos, token, visibility),
+        args=(job_id, repos, token, visibility, session_id),  # NEW: Pass session_id
         daemon=True,
     )
     worker.start()
 
     append_bulk_scan_log(job_id, "Bulk scan job created.")
+    
+    # NEW: Create initial notification
+    add_session_notification(
+        "scan_started",
+        "Bulk Scan Starting",
+        f"Preparing to scan {len(repos)} repositories...",
+        {"job_id": job_id, "repo_count": len(repos)}
+    )
+    
     return jsonify(
         {
             "job_id": job_id,
@@ -968,7 +1052,16 @@ def scan_all_status(job_id):
         job = BULK_SCAN_JOBS.get(job_id)
         if not job:
             return jsonify({"error": "Bulk scan job not found."}), 404
+        
         response = serialize_bulk_scan_job(job)
+        
+        # NEW: If job completed, cache result in session
+        if job.get("status") == "completed" and "report" in job:
+            session_id = job.get("session_id") or get_session_id()
+            with SESSION_DATA_LOCK:
+                if session_id not in SESSION_SCAN_RESULTS:
+                    SESSION_SCAN_RESULTS[session_id] = {}
+                SESSION_SCAN_RESULTS[session_id][job_id] = job.get("report")
 
     return jsonify(response)
 
@@ -1189,8 +1282,228 @@ def scan_history():
     return render_template("scan_history.html", scan_reports=scan_reports)
 
 
+# ============================================================================
+# NOTIFICATION API ENDPOINTS (Production-Grade)
+# ============================================================================
+
+@app.route("/api/notifications")
+def get_notifications():
+    """Get all notifications for current session"""
+    token = session.get("access_token")
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    session_id = get_session_id()
+    with SESSION_DATA_LOCK:
+        notifications = SESSION_NOTIFICATIONS.get(session_id, [])
+        unread_count = sum(1 for n in notifications if not n.get("read"))
+    
+    return jsonify({
+        "notifications": notifications,
+        "unread_count": unread_count
+    })
+
+
+@app.route("/api/notifications/<notification_id>/read", methods=["POST"])
+def mark_notification_read(notification_id):
+    """Mark notification as read"""
+    token = session.get("access_token")
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    session_id = get_session_id()
+    with SESSION_DATA_LOCK:
+        notifications = SESSION_NOTIFICATIONS.get(session_id, [])
+        for notif in notifications:
+            if notif.get("id") == notification_id:
+                notif["read"] = True
+                break
+    
+    return jsonify({"status": "ok"})
+
+
+@app.route("/api/notifications/clear", methods=["POST"])
+def clear_notifications():
+    """Clear all notifications"""
+    token = session.get("access_token")
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    session_id = get_session_id()
+    with SESSION_DATA_LOCK:
+        SESSION_NOTIFICATIONS[session_id] = []
+    
+    return jsonify({"status": "ok"})
+
+
+# ============================================================================
+# REPOSITORY API ENDPOINTS (Production-Grade)
+# ============================================================================
+
+@app.route("/api/all-user-repos")
+def all_user_repos():
+    """Get ALL user repositories (with pagination)"""
+    token = session.get("access_token")
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    try:
+        repos = get_repos(token)
+        return jsonify(repos)
+    except Exception as e:
+        logger.error(f"Failed to fetch all repos: {e}")
+        return jsonify({"error": "Failed to fetch repositories", "details": str(e)}), 500
+
+
+@app.route("/api/session-stats")
+def session_stats():
+    """Get session-based statistics for dashboard"""
+    token = session.get("access_token")
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+    
+    session_id = get_session_id()
+    
+    # Count scans completed in this session
+    scanned_today = 0
+    high_risk_findings = 0
+    
+    with SESSION_DATA_LOCK:
+        scan_results = SESSION_SCAN_RESULTS.get(session_id, {})
+        for report in scan_results.values():
+            if report:
+                scanned_today += report.get("scanned_repositories", 0)
+                # Count CRITICAL and HIGH severity findings
+                severity_counts = report.get("severity_counts", {})
+                high_risk_findings += severity_counts.get("CRITICAL", 0) + severity_counts.get("HIGH", 0)
+    
+    try:
+        total_repositories = len(get_repos(token)) if token else 0
+    except Exception:
+        total_repositories = 0
+    
+    return jsonify({
+        "scanned_today": scanned_today,
+        "high_risk_findings": high_risk_findings,
+        "total_repositories": total_repositories
+    })
+
+
+@app.route("/api/bulk-scan/start", methods=["POST"])
+@require_login
+def start_bulk_scan():
+    """Start a bulk scan session."""
+    from bulk_scan_service import get_bulk_scan_manager
+    
+    data = request.get_json() or {}
+    session_id = data.get("session_id")
+    
+    if not session_id:
+        return jsonify({"error": "session_id is required"}), 400
+    
+    manager = get_bulk_scan_manager()
+    manager.create_session(session_id)
+    
+    # Get repositories to scan
+    token = session.get("github_token")
+    try:
+        repositories = get_repos(token)
+        repo_names = [f"{repo['owner']['login']}/{repo['name']}" for repo in repositories]
+    except Exception as e:
+        logger.error(f"Failed to get repositories: {e}")
+        return jsonify({"error": "Failed to fetch repositories"}), 500
+    
+    # Start the scan
+    manager.start_scan(session_id, repo_names)
+    
+    return jsonify({
+        "session_id": session_id,
+        "status": "started",
+        "repositories_count": len(repo_names)
+    })
+
+
+@app.route("/api/bulk-scan/stop", methods=["POST"])
+@require_login
+def stop_bulk_scan():
+    """Stop an ongoing bulk scan."""
+    from bulk_scan_service import get_bulk_scan_manager
+    
+    data = request.get_json() or {}
+    session_id = data.get("session_id")
+    
+    if not session_id:
+        return jsonify({"error": "session_id is required"}), 400
+    
+    manager = get_bulk_scan_manager()
+    success = manager.stop_scan(session_id)
+    
+    if not success:
+        return jsonify({"error": "Failed to stop scan"}), 400
+    
+    return jsonify({"session_id": session_id, "status": "stopped"})
+
+
+@app.route("/api/bulk-scan/progress/<session_id>")
+@require_login
+def get_bulk_scan_progress(session_id):
+    """Get the progress of a bulk scan session."""
+    from bulk_scan_service import get_bulk_scan_manager
+    
+    manager = get_bulk_scan_manager()
+    progress = manager.get_progress(session_id)
+    
+    if "error" in progress:
+        return jsonify(progress), 404
+    
+    return jsonify(progress)
+
+
+@app.route("/api/bulk-scan/sessions")
+@require_login
+def get_bulk_scan_sessions():
+    """Get all bulk scan sessions."""
+    from bulk_scan_service import get_bulk_scan_manager
+    
+    manager = get_bulk_scan_manager()
+    sessions = manager.get_all_sessions()
+    
+    return jsonify({"sessions": sessions})
+
+
+# ============================================================================
+# LEGAL & DOCUMENTATION PAGES
+# ============================================================================
+
+@app.route("/documentation")
+def documentation():
+    """Display comprehensive documentation and help."""
+    return render_template("documentation.html")
+
+
+@app.route("/privacy")
+def privacy_policy():
+    """Display privacy policy."""
+    return render_template("privacy_policy.html")
+
+
+@app.route("/terms")
+def terms_of_service():
+    """Display terms of service."""
+    return render_template("terms_of_service.html")
+
+
+@app.route("/support")
+def support():
+    """Display support and help page."""
+    return render_template("support.html")
+
+
 @app.route("/logout")
 def logout():
+    session_id = session.get("session_id")
+    if session_id:
+        cleanup_old_session_data(session_id)
     session.clear()
     return redirect(url_for("index"))
 

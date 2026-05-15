@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/bulk-scan-and-notifications.css') }}">
   {% block extra_css %}{% endblock %}
 </head>
 <body class="app-shell">
@@ -20,9 +21,9 @@
     <div class="header-container">
       <div class="header-left">
         <div class="brand">
-          <div class="">
+          <a href="{{ url_for('dashboard') if (user is defined and user) else url_for('index') }}" class="logo-link" title="Go to home">
             <img src="{{ url_for('static', filename='images/logo.png') }}" alt="GVD Logo" width="75" height="75">
-          </div>
+          </a>
           <h1 class="brand-name"></h1>
         </div>
       </div>
@@ -42,6 +43,7 @@
       -->
       <div class="header-right">
         {% block header_actions %}
+        {% if user is defined and user %}
         <div class="header-actions">
           <button class="btn btn-ghost btn-sm" id="notifications-btn" aria-label="Notifications">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -87,6 +89,7 @@
             </div>
           </div>
         </div>
+        {% endif %}
         {% endblock %}
       </div>
     </div>
@@ -104,10 +107,10 @@
         <p>&copy; 2026 GVD. Built for developers who value security.</p>
       </div>
       <div class="footer-right">
-        <a href="#" class="footer-link">Documentation</a>
-        <a href="#" class="footer-link">Privacy</a>
-        <a href="#" class="footer-link">Terms</a>
-        <a href="#" class="footer-link">Support</a>
+        <a href="{{ url_for('documentation') }}" class="footer-link">Documentation</a>
+        <a href="{{ url_for('privacy_policy') }}" class="footer-link">Privacy</a>
+        <a href="{{ url_for('terms_of_service') }}" class="footer-link">Terms</a>
+        <a href="{{ url_for('support') }}" class="footer-link">Support</a>
       </div>
     </div>
   </footer>
@@ -117,6 +120,7 @@
   
   <!-- Scripts -->
   <script src="{{ url_for('static', filename='js/base.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/bulk-scan-and-notifications.js') }}"></script>
   {% block extra_js %}{% endblock %}
 </body>
 </html>

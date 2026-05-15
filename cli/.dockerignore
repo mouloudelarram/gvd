@@ -1,14 +1,36 @@
-# Git
+# GVD CLI Production .dockerignore
+# Optimized for minimal build context and image size
+
+# ============================================================================
+# VERSION CONTROL
+# ============================================================================
 .git
 .gitignore
+.gitattributes
+.github
 
-# Python
+# ============================================================================
+# IDE & DEVELOPMENT
+# ============================================================================
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+.sublime-*
+
+# ============================================================================
+# PYTHON
+# ============================================================================
 __pycache__
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
 .Python
-env
 pip-log.txt
 pip-delete-this-directory.txt
 .tox
@@ -18,36 +40,87 @@ pip-delete-this-directory.txt
 nosetests.xml
 coverage.xml
 *.cover
-*.log
-.git
+.hypothesis
 .mypy_cache
 .pytest_cache
-.hypothesis
+.pylint
 
-# Virtual environments
+# ============================================================================
+# VIRTUAL ENVIRONMENTS
+# ============================================================================
 .venv
 venv/
 ENV/
 env/
 .ENV
+pipenv/
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
+# ============================================================================
+# TESTING & DOCUMENTATION
+# ============================================================================
+test_*.py
+*_test.py
+tests/
+docs/
+*.md
+*.pdf
+HANDBOOK.md
 
-# OS
-.DS_Store
-.DS_Store?
-._*
+# ============================================================================
+# ENVIRONMENT & SECRETS
+# ============================================================================
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets/
+
+# ============================================================================
+# TEMPORARY & LOGS
+# ============================================================================
+*.log
+*.tmp
+.tmp/
+temp/
+tmp/
+test-report/
+
+# ============================================================================
+# BUILD ARTIFACTS & DISTRIBUTION
+# ============================================================================
+dist/
+build/
+*.egg-info/
+*.whl
+*.egg
+.eggs/
+__pycache__/
+
+# ============================================================================
+# DOCKER & CI/CD
+# ============================================================================
+Dockerfile
+Dockerfile.prod
+docker-compose.yml
+.dockerignore
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# ============================================================================
+# APPLICATION DATA (WILL BE IN VOLUMES)
+# ============================================================================
+reports/
+repos/
+__pycache__/
+
+# ============================================================================
+# OS & BUILD ARTIFACTS
+# ============================================================================
 .Spotlight-V100
 .Trashes
 ehthumbs.db
-Thumbs.db
-
-# Local development files
 .env.local
 .env.development
 *.local

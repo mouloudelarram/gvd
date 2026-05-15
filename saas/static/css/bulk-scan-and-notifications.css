@@ -1,0 +1,482 @@
+/* ========================================================================
+   GVD Bulk Scan & Notifications - Enterprise Grade Styling
+   ======================================================================== */
+
+/* ========================================================================
+   NOTIFICATION BADGE & DROPDOWN
+   ======================================================================== */
+
+#notifications-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+  border-radius: 50%;
+  min-width: 24px;
+  height: 24px;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  letter-spacing: -0.5px;
+}
+
+.notifications-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  max-width: 420px;
+  max-height: 500px;
+  overflow-y: auto;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+}
+
+.notifications-dropdown[hidden] {
+  display: none;
+}
+
+.notification-item {
+  padding: 16px;
+  border-bottom: 1px solid #f3f4f6;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.notification-item:last-child {
+  border-bottom: none;
+}
+
+.notification-item:hover {
+  background-color: #f9fafb;
+}
+
+.notification-item.unread {
+  background-color: #f0f9ff;
+  border-left: 3px solid #0ea5e9;
+  padding-left: 13px;
+}
+
+.notification-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.notification-title {
+  font-weight: 600;
+  font-size: 14px;
+  color: #1f2937;
+  line-height: 1.4;
+}
+
+.notification-message {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.notification-time {
+  font-size: 11px;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.notification-empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+/* ========================================================================
+   BULK SCAN MODAL - PROGRESS BAR
+   ======================================================================== */
+
+.bulk-scan-progress-section {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.bulk-scan-progress-bar {
+  height: 10px;
+  background: #f3f4f6;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 12px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6 0%, #0ea5e9 50%, #06b6d4 100%);
+  border-radius: 6px;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.4);
+  position: relative;
+}
+
+.progress-bar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(255, 255, 255, 0.3) 50%, 
+    transparent 100%);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.bulk-scan-progress-text {
+  font-size: 13px;
+  color: #6b7280;
+  text-align: center;
+  font-weight: 500;
+  letter-spacing: -0.3px;
+}
+
+/* ========================================================================
+   BULK SCAN MODAL - STATS GRID
+   ======================================================================== */
+
+.bulk-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.stat-card {
+  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+  transition: all 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card:hover {
+  transform: translateY(-2px);
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.stat-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #3b82f6, transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.stat-card:hover::before {
+  opacity: 1;
+}
+
+.stat-card-critical {
+  background: linear-gradient(135deg, #fef2f2 0%, #fff5f5 100%);
+  border-color: #fecaca;
+}
+
+.stat-card-critical:hover {
+  border-color: #fca5a5;
+}
+
+.stat-card-high {
+  background: linear-gradient(135deg, #fef3c7 0%, #fef08a 100%);
+  border-color: #fde68a;
+}
+
+.stat-card-high:hover {
+  border-color: #fcd34d;
+}
+
+.stat-card-medium {
+  background: linear-gradient(135deg, #fef08a 0%, #fef3c7 100%);
+  border-color: #fde047;
+}
+
+.stat-card-medium:hover {
+  border-color: #facc15;
+}
+
+.stat-card-low {
+  background: linear-gradient(135deg, #f0fdf4 0%, #f7fee7 100%);
+  border-color: #bbf7d0;
+}
+
+.stat-card-low:hover {
+  border-color: #86efac;
+}
+
+.stat-label {
+  font-size: 11px;
+  color: #6b7280;
+  margin-bottom: 6px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ========================================================================
+   BULK SCAN MODAL - LIVE LOGS
+   ======================================================================== */
+
+.bulk-scan-logs-section {
+  margin-bottom: 20px;
+}
+
+.bulk-logs-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bulk-scan-logs {
+  background: linear-gradient(135deg, #1f2937 0%, #111827 100%);
+  color: #f3f4f6;
+  padding: 14px;
+  border-radius: 10px;
+  font-family: 'SFMono-Regular', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 12px;
+  max-height: 350px;
+  overflow-y: auto;
+  line-height: 1.6;
+  border: 1px solid #374151;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.bulk-scan-logs::-webkit-scrollbar {
+  width: 6px;
+}
+
+.bulk-scan-logs::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.bulk-scan-logs::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.bulk-scan-logs::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.log-entry {
+  display: flex;
+  margin-bottom: 4px;
+  gap: 12px;
+  line-height: 1.5;
+}
+
+.log-time {
+  color: #60a5fa;
+  min-width: 70px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+
+.log-message {
+  flex: 1;
+  word-break: break-word;
+  white-space: pre-wrap;
+  font-weight: 400;
+}
+
+.log-entry-info .log-message {
+  color: #e5e7eb;
+}
+
+.log-entry-info .log-time {
+  color: #93c5fd;
+}
+
+.log-entry-success .log-message {
+  color: #86efac;
+}
+
+.log-entry-success .log-time {
+  color: #4ade80;
+}
+
+.log-entry-warning .log-message {
+  color: #fcd34d;
+}
+
+.log-entry-warning .log-time {
+  color: #fbbf24;
+}
+
+.log-entry-error .log-message {
+  color: #f87171;
+}
+
+.log-entry-error .log-time {
+  color: #ef4444;
+}
+
+/* ========================================================================
+   BULK SCAN MODAL - REPORT BUTTONS
+   ======================================================================== */
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.modal-actions .btn {
+  flex-shrink: 0;
+  min-width: 120px;
+}
+
+#bulk-scan-view-json,
+#bulk-scan-view-pdf,
+#bulk-scan-download-json,
+#bulk-scan-download-pdf {
+  animation: slideInUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ========================================================================
+   RESPONSIVE ADJUSTMENTS
+   ======================================================================== */
+
+@media (max-width: 1024px) {
+  .bulk-stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 10px;
+  }
+  
+  .stat-value {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 768px) {
+  .notifications-dropdown {
+    max-width: calc(100vw - 32px);
+  }
+  
+  .bulk-stats-grid {
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+    gap: 8px;
+  }
+  
+  .stat-card {
+    padding: 10px;
+  }
+  
+  .stat-label {
+    font-size: 10px;
+  }
+  
+  .stat-value {
+    font-size: 18px;
+  }
+  
+  .bulk-scan-logs {
+    max-height: 250px;
+    font-size: 11px;
+  }
+  
+  .log-entry {
+    gap: 8px;
+  }
+  
+  .log-time {
+    min-width: 60px;
+    font-size: 11px;
+  }
+  
+  .modal-actions {
+    justify-content: stretch;
+  }
+  
+  .modal-actions .btn {
+    flex: 1;
+    min-width: auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .bulk-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+  
+  .stat-card {
+    padding: 8px;
+  }
+  
+  .stat-label {
+    font-size: 9px;
+  }
+  
+  .stat-value {
+    font-size: 16px;
+  }
+  
+  .bulk-scan-logs {
+    max-height: 200px;
+    font-size: 10px;
+    padding: 10px;
+  }
+  
+  .log-time {
+    min-width: 50px;
+    font-size: 10px;
+  }
+}

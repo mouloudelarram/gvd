@@ -1,0 +1,89 @@
+# GVD Flask Backend - Production Multi-Stage Build
+# Designed for AWS EC2, VPS, and cloud deployments
+# ====================================================
+
+# Stage 1: Builder
+FROM python:3.11-slim AS builder
+
+WORKDIR /build
+
+# Install build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements
+COPY requirements.txt .
+
+# Create wheels for all dependencies (faster installation in final stage)
+RUN pip install --no-cache-dir --user \
+    --no-warn-script-location \
+    --requirement requirements.txt
+
+
+# Stage 2: Runtime
+FROM python:3.11-slim
+
+# Set security umask
+RUN umask 0027
+
+# Install only runtime dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for security
+RUN groupadd -r gvd && useradd -r -g gvd gvd
+
+WORKDIR /app
+
+# Copy Python packages from builder
+COPY --from=builder --chown=gvd:gvd /root/.local /home/gvd/.local
+
+# Set Python path
+ENV PATH=/home/gvd/.local/bin:$PATH
+ENV PYTHONPATH=/app
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV FLASK_ENV=production
+
+# Copy application code
+COPY --chown=gvd:gvd . .
+
+# Create necessary directories with proper permissions
+RUN mkdir -p \
+    /app/scan_reports \
+    /app/repos \
+    /app/uploads \
+    /app/temp \
+    /app/logs \
+    && chown -R gvd:gvd \
+    /app/scan_reports \
+    /app/repos \
+    /app/uploads \
+    /app/temp \
+    /app/logs \
+    && chmod 755 /app/scan_reports /app/repos /app/uploads /app/temp /app/logs
+
+# Switch to non-root user
+USER gvd
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:5000/health || exit 1
+
+# Expose port (reverse proxy will be on 80/443)
+EXPOSE 5000
+
+# Production entrypoint
+CMD ["gunicorn", \
+     "--config", "/app/gunicorn_config.py", \
+     "--bind", "0.0.0.0:5000", \
+     "--access-logfile", "-", \
+     "--error-logfile", "-", \
+     "--log-level", "info", \
+     "app:app"]

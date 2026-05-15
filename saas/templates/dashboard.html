@@ -108,7 +108,7 @@
           </svg>
         </div>
         <div class="metric-content">
-          <div class="metric-value">0</div>
+          <div class="metric-value" data-metric="scanned-today">0</div>
           <div class="metric-label">Scanned Today</div>
         </div>
       </div>
@@ -123,7 +123,7 @@
           </svg>
         </div>
         <div class="metric-content">
-          <div class="metric-value">0</div>
+          <div class="metric-value" data-metric="high-risk">0</div>
           <div class="metric-label">High Risk Findings</div>
         </div>
       </div>
@@ -392,8 +392,20 @@
           <div class="stat-value" id="bulk-stat-findings">0</div>
         </div>
         <div class="stat-card stat-card-critical">
-          <div class="stat-label">High Risk</div>
+          <div class="stat-label">Critical</div>
           <div class="stat-value" id="bulk-stat-critical">0</div>
+        </div>
+        <div class="stat-card stat-card-high">
+          <div class="stat-label">High</div>
+          <div class="stat-value" id="bulk-stat-high">0</div>
+        </div>
+        <div class="stat-card stat-card-medium">
+          <div class="stat-label">Medium</div>
+          <div class="stat-value" id="bulk-stat-medium">0</div>
+        </div>
+        <div class="stat-card stat-card-low">
+          <div class="stat-label">Low</div>
+          <div class="stat-value" id="bulk-stat-low">0</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Failures</div>
@@ -403,17 +415,18 @@
 
       <!-- Live Logs -->
       <div class="bulk-scan-logs-section">
-        <h3 class="bulk-logs-title">Scan Activity</h3>
+        <h3 class="bulk-logs-title">Live Scan Logs</h3>
         <div class="bulk-scan-logs" id="bulk-scan-logs">
-          <div class="log-entry log-entry-info">
-            <span class="log-time">00:00:00</span>
-            <span class="log-message">Initializing bulk scan...</span>
-          </div>
         </div>
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" id="bulk-scan-close-btn" data-close-scan-modal="true">Close</button>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="bulk-scan-view-json" hidden>View JSON Report</button>
+        <button class="btn btn-ghost" id="bulk-scan-view-pdf" hidden>View PDF Report</button>
+        <a class="btn btn-ghost" id="bulk-scan-download-json" download hidden>Download JSON</a>
+        <a class="btn btn-ghost" id="bulk-scan-download-pdf" download hidden>Download PDF</a>
+      </div>
     </div>
   </div>
 </div>

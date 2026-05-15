@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}Terms of Service - GVD{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/legal.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="legal-container">
+  <div class="legal-header">
+    <h1>Terms of Service</h1>
+    <p class="legal-date">Last Updated: January 2026</p>
+  </div>
+
+  <div class="legal-content">
+    <section class="legal-section">
+      <h2>1. Agreement to Terms</h2>
+      <p>
+        These Terms of Service ("Terms") constitute a legally binding agreement between you and GVD (GitHub Vulnerability Detector) ("Company," "we," "us," "our"). By accessing and using GVD, including all content and functionality provided through the website, you accept and agree to be bound by these Terms.
+      </p>
+      <p>
+        If you do not agree with any part of these Terms, you should not use GVD.
+      </p>
+    </section>
+
+    <section class="legal-section">
+      <h2>2. Use License</h2>
+      <h3>2.1 Grant of License</h3>
+      <p>
+        Subject to your compliance with these Terms and any applicable fees, we grant you a limited, non-exclusive, non-transferable, and revocable license to use GVD for personal, non-commercial security analysis of your repositories.
+      </p>
+
+      <h3>2.2 Permitted Use</h3>
+      <p>You may use GVD to:</p>
+      <ul class="legal-list">
+        <li>Scan repositories you own or have permission to scan</li>
+        <li>Generate security reports for those repositories</li>
+        <li>Download and share reports</li>
+        <li>Remediate vulnerabilities identified in reports</li>
+      </ul>
+
+      <h3>2.3 Prohibited Uses</h3>
+      <p>You may NOT use GVD to:</p>
+      <ul class="legal-list">
+        <li>Scan repositories you don't own or don't have permission to scan</li>
+        <li>Scan repositories belonging to others without authorization</li>
+        <li>Use automated tools, bots, or scripts to access GVD (beyond normal use)</li>
+        <li>Attempt to hack, reverse-engineer, or compromise GVD</li>
+        <li>Upload malware or malicious code</li>
+        <li>Use GVD to conduct security research without permission</li>
+        <li>Violate any laws or regulations in your jurisdiction</li>
+        <li>Harass, abuse, or harm others</li>
+        <li>Share your account credentials with others</li>
+        <li>Bypass security measures or access controls</li>
+      </ul>
+
+      <h3>2.4 License Termination</h3>
+      <p>
+        We reserve the right to terminate or restrict your access to GVD at any time for violation of these Terms.
+      </p>
+    </section>
+
+    <section class="legal-section">
+      <h2>3. Repository Scanning and Analysis</h2>
+      
+      <h3>3.1 How Scanning Works</h3>
+      <p>
+        GVD uses the following process to scan repositories:
+      </p>
+      <ol class="legal-list">
+        <li>Repository is cloned to a temporary local directory</li>
+        <li>Local clone is analyzed for security vulnerabilities</li>
+        <li>Security report is generated from the analysis</li>
+        <li>Temporary repository clone is permanently deleted</li>
+        <li>Report is displayed and available for download</li>
+      </ol>
+
+      <h3>3.2 What Gets Analyzed</h3>
+      <p>
+        GVD analyzes repositories for:
+      </p>
+      <ul class="legal-list">
+        <li>Exposed secrets and credentials (API keys, tokens, passwords)</li>
+        <li>Sensitive files and configurations</li>
+        <li>Git history for exposed secrets</li>
+        <li>Common security patterns and risks</li>
+      </ul>
+
+      <h3>3.3 What Does NOT Get Stored</h3>
+      <p>
+        GVD does NOT permanently store:
+      </p>
+      <ul class="legal-list">
+        <li>Your repository source code</li>
+        <li>Repository file contents</li>
+        <li>Full git history</li>
+        <li>Permanent scan history or records</li>
+      </ul>
+      <p>
+        Only security reports are generated and stored temporarily in your session.
+      </p>
+
+      <h3>3.4 Limitations and Disclaimers</h3>
+      <p>
+        We make the following disclaimers regarding scanning accuracy:
+      </p>
+      <ul class="legal-list">
+        <li><strong>No Guarantee of Detection:</strong> GVD may not detect all vulnerabilities. No scanning tool is 100% effective.</li>
+        <li><strong>False Positives:</strong> GVD may identify issues that are not actually security risks.</li>
+        <li><strong>False Negatives:</strong> GVD may miss actual security vulnerabilities.</li>
+        <li><strong>Pattern-Based Detection:</strong> Detection is based on known patterns and may not identify novel threats.</li>
+        <li><strong>No Compliance Guarantee:</strong> GVD does not guarantee compliance with any security standards or regulations.</li>
+      </ul>
+      <p>
+        <strong>You are solely responsible for security decisions made based on GVD reports. Always conduct additional security review before production deployment.</strong>
+      </p>
+    </section>
+
+    <section class="legal-section">
+      <h2>4. User Responsibilities</h2>
+      
+      <h3>4.1 Authorization and Permissions</h3>
+      <p>
+        You represent and warrant that:
+      </p>
+      <ul class="legal-list">
+        <li>You have authority to grant GVD access to your repositories</li>
+        <li>All repositories you scan are either owned by you or you have explicit permission to scan them</li>
+        <li>You will not scan repositories without authorization</li>
+      </ul>
+
+      <h3>4.2 Account Security</h3>
+      <p>
+        You are responsible for:
+      </p>
+      <ul class="legal-list">
+        <li>Maintaining the confidentiality of your GitHub credentials</li>
+        <li>Not sharing your account credentials with others</li>
+        <li>Promptly notifying us of unauthorized access</li>
+        <li>Logging out when finished with your session</li>
+      </ul>
+
+      <h3>4.3 Compliance with Laws</h3>
+      <p>
+        You agree to comply with all applicable laws and regulations, including:
+      </p>
+      <ul class="legal-list">
+        <li>Laws in your jurisdiction</li>
+        <li>Laws in jurisdictions where accessed</li>
+        <li>Intellectual property laws</li>
+        <li>Data protection and privacy laws</li>
+      </ul>
+    </section>
+
+    <section class="legal-section">
+      <h2>5. Intellectual Property Rights</h2>
+      
+      <h3>5.1 GVD Content</h3>
+      <p>
+        All content included in GVD (software, website, reports, text, graphics, logos, images, audio clips, data) is the property of GVD or its content suppliers and is protected by international copyright laws.
+      </p>
+
+      <h3>5.2 Your Content</h3>
+      <p>
+        You retain all rights to your repository code and content. By using GVD, you grant us limited license to:
+      </p>
+      <ul class="legal-list">
+        <li>Access your repositories to perform security analysis</li>
+        <li>Generate security reports</li>
+        <li>Analyze patterns for service improvement (in anonymized form)</li>
+      </ul>
+
+      <h3>5.3 Report Ownership</h3>
+      <p>
+        Security reports generated by GVD are created for your use. You may:
+      </p>
+      <ul class="legal-list">
+        <li>Download and save reports</li>
+        <li>Share reports with team members</li>
+        <li>Use reports for security remediation</li>
+      </ul>
+      <p>
+        You may not distribute reports as part of a competing security service.
+      </p>
+    </section>
+
+    <section class="legal-section">
+      <h2>6. Disclaimers and Limitations of Liability</h2>
+      
+      <h3>6.1 "As-Is" Service</h3>
+      <p>
+        GVD is provided on an "as-is" and "as-available" basis without warranties of any kind, express or implied, including:
+      </p>
+      <ul class="legal-list">
+        <li>Warranty of merchantability</li>
+        <li>Warranty of fitness for a particular purpose</li>
+        <li>Warranty of non-infringement</li>
+        <li>Warranty of title</li>
+      </ul>
+
+      <h3>6.2 No Guarantees</h3>
+      <p>
+        We do not guarantee that:
+      </p>
+      <ul class="legal-list">
+        <li>GVD will be uninterrupted or error-free</li>
+        <li>All vulnerabilities will be detected</li>
+        <li>Reports will be 100% accurate</li>
+        <li>GVD will meet your specific security requirements</li>
+      </ul>
+
+      <h3>6.3 Limitation of Liability</h3>
+      <p>
+        To the maximum extent permitted by law, GVD shall not be liable for:
+      </p>
+      <ul class="legal-list">
+        <li>Any indirect, incidental, special, or consequential damages</li>
+        <li>Loss of data, revenue, or profits</li>
+        <li>Security breaches or data leaks</li>
+        <li>Damages resulting from your use of GVD reports</li>
+        <li>Damages resulting from vulnerabilities missed by GVD</li>
+      </ul>
+      <p>
+        <strong>Your sole remedy for dissatisfaction with GVD is to stop using it.</strong>
+      </p>
+
+      <h3>6.4 Security Disclaimer</h3>
+      <p>
+        <strong>GVD is not a substitute for professional security audits or penetration testing.</strong> No automated scanning tool can identify all security risks. Always conduct thorough security reviews by qualified professionals before deploying code to production.
+      </p>
+    </section>
+
+    <section class="legal-section">
+      <h2>7. Indemnification</h2>
+      <p>
+        You agree to indemnify, defend, and hold harmless GVD and its officers, directors, employees, and agents from and against any claims, damages, losses, or expenses (including reasonable attorneys' fees) arising from:
+      </p>
+      <ul class="legal-list">
+        <li>Your violation of these Terms</li>
+        <li>Your use of GVD</li>
+        <li>Unauthorized access to repositories using your account</li>
+        <li>Negligent or intentional misuse of GVD</li>
+      </ul>
+    </section>
+
+    <section class="legal-section">
+      <h2>8. Privacy and Data</h2>
+      <h3>8.1 Privacy Policy</h3>
+      <p>
+        Your use of GVD is governed by our <a href="{{ url_for('privacy_policy') }}" class="legal-link">Privacy Policy</a>. Please review it to understand our practices.
+      </p>
+
+      <h3>8.2 Session-Based Storage</h3>
+      <p>
+        All scan reports and results are stored temporarily in your session and automatically deleted when you log out or after 24 hours of inactivity.
+      </p>
+
+      <h3>8.3 No Permanent Records</h3>
+      <p>
+        GVD does not maintain permanent databases of your scans or repositories. All temporary data is automatically purged.
+      </p>
+    </section>
+
+    <section class="legal-section">
+      <h2>9. Acceptable Use Policy</h2>
+      <h3>9.1 Prohibited Activities</h3>
+      <p>
+        You agree not to:
+      </p>
+      <ul class="legal-list">
+        <li>Violate any laws or regulations</li>
+        <li>Scan repositories without authorization</li>
+        <li>Use GVD to conduct unauthorized security research</li>
+        <li>Share your login credentials with others</li>
+        <li>Attempt to access other users' accounts</li>
+        <li>Use GVD as part of unauthorized security testing</li>
+        <li>Interfere with or disrupt GVD infrastructure</li>
+        <li>Circumvent security measures or access controls</li>
+      </ul>
+
+      <h3>9.2 Enforcement</h3>
+      <p>
+        We reserve the right to:
+      </p>
+      <ul class="legal-list">
+        <li>Monitor for violations of these Terms</li>
+        <li>Terminate access for violations</li>
+        <li>Report illegal activity to authorities</li>
+        <li>Cooperate with law enforcement investigations</li>
+      </ul>
+    </section>
+
+    <section class="legal-section">
+      <h2>10. Third-Party Services</h2>
+      <h3>10.1 GitHub Integration</h3>
+      <p>
+        GVD integrates with GitHub. Your use of GitHub is governed by <a href="https://github.com/site/terms" target="_blank" class="legal-link">GitHub's Terms of Service</a>. We are not responsible for GitHub's actions or policies.
+      </p>
+
+      <h3>10.2 Third-Party Links</h3>
+      <p>
+        GVD may include links to third-party websites. We are not responsible for their content, accuracy, or practices. Use of third-party sites is at your own risk and governed by their terms.
+      </p>
+    </section>
+
+    <section class="legal-section">
+      <h2>11. Modifications and Discontinuation</h2>
+      <h3>11.1 Service Changes</h3>
+      <p>
+        We reserve the right to:
+      </p>
+      <ul class="legal-list">
+        <li>Modify or discontinue GVD at any time</li>
+        <li>Modify these Terms at any time</li>
+        <li>Modify features, functionality, or pricing</li>
+      </ul>
+
+      <h3>11.2 Termination</h3>
+      <p>
+        Either party may terminate use of GVD at any time:
+      </p>
+      <ul class="legal-list">
+        <li><strong>You:</strong> Simply stop using GVD or revoke GitHub access</li>
+        <li><strong>We:</strong> May terminate access for violations or business reasons</li>
+      </ul>
+    </section>
+
+    <section class="legal-section">
+      <h2>12. Contact and Dispute Resolution</h2>
+      <h3>12.1 Contact Information</h3>
+      <p>
+        For questions about these Terms, please visit our <a href="{{ url_for('support') }}" class="legal-link">Support page</a>.
+      </p>
+
+      <h3>12.2 Informal Resolution</h3>
+      <p>
+        Before pursuing formal legal action, we encourage you to contact us to resolve disputes informally.
+      </p>
+    </section>
+
+    <section class="legal-section">
+      <h2>13. Governing Law</h2>
+      <p>
+        These Terms and your use of GVD are governed by applicable laws in the jurisdiction where GVD operates. Any legal disputes shall be resolved according to those laws.
+      </p>
+    </section>
+
+    <section class="legal-section">
+      <h2>14. Entire Agreement</h2>
+      <p>
+        These Terms of Service, together with the Privacy Policy, constitute the entire agreement between you and GVD regarding use of the service and supersede all prior agreements and understandings.
+      </p>
+    </section>
+
+    <section class="legal-section">
+      <h2>15. Changes to Terms</h2>
+      <p>
+        We may modify these Terms at any time. Continued use of GVD following posting of modified Terms constitutes your acceptance of the changes.
+      </p>
+    </section>
+  </div>
+
+  <nav class="legal-nav">
+    <a href="{{ url_for('privacy_policy') }}" class="legal-nav-link">Privacy Policy</a>
+    <a href="{{ url_for('documentation') }}" class="legal-nav-link">Documentation</a>
+    <a href="{{ url_for('support') }}" class="legal-nav-link">Support</a>
+  </nav>
+</div>
+{% endblock %}

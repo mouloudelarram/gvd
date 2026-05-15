@@ -1,0 +1,277 @@
+{% extends "base.html" %}
+
+{% block title %}Privacy Policy - GVD{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/legal.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="legal-container">
+  <div class="legal-header">
+    <h1>Privacy Policy</h1>
+    <p class="legal-date">Last Updated: January 2026</p>
+  </div>
+
+  <div class="legal-content">
+    <section class="legal-section">
+      <h2>1. Introduction</h2>
+      <p>
+        GVD (GitHub Vulnerability Detector) ("we," "us," "our," or "Company") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our website and services.
+      </p>
+      <p>
+        Please read this Privacy Policy carefully. If you do not agree with our policies and practices, please do not use our Services.
+      </p>
+    </section>
+
+    <section class="legal-section">
+      <h2>2. What Information We Collect</h2>
+      
+      <h3>2.1 Information Directly Collected</h3>
+      
+      <h4>GitHub User Profile Information</h4>
+      <p>When you authenticate with GitHub OAuth, we collect and store:</p>
+      <ul class="legal-list">
+        <li>GitHub username</li>
+        <li>Email address (from your GitHub profile)</li>
+        <li>Name (as provided in GitHub profile)</li>
+        <li>Avatar/profile picture URL</li>
+      </ul>
+      <p><strong>Purpose:</strong> To identify you, customize your experience, and enable repository access.</p>
+
+      <h4>GitHub Access Token</h4>
+      <p>
+        When you authorize GVD, GitHub generates an OAuth access token. This token is transmitted to our servers and stored securely in your server-side session.
+      </p>
+      <p><strong>Purpose:</strong> To access your GitHub repositories and perform scans on your behalf.</p>
+      <p><strong>Storage:</strong> Tokens are stored in encrypted server-side sessions only. Tokens are immediately cleared when you log out.</p>
+
+      <h4>Session Information</h4>
+      <p>We store the following in your session while you're logged in:</p>
+      <ul class="legal-list">
+        <li>Session ID (unique identifier)</li>
+        <li>GitHub access token</li>
+        <li>Scan reports (temporary)</li>
+        <li>Notifications (temporary)</li>
+      </ul>
+      <p><strong>Storage Method:</strong> Server-side in-memory session storage (not in a persistent database).</p>
+      <p><strong>Retention:</strong> Session data is automatically deleted when you log out or after 24 hours of inactivity.</p>
+
+      <h3>2.2 Information Generated During Scanning</h3>
+      
+      <h4>Scan Results and Reports</h4>
+      <p>
+        When you scan a repository, we generate a security report containing:
+      </p>
+      <ul class="legal-list">
+        <li>Repository information (name, owner, URL)</li>
+        <li>Scan metadata (timestamp, scan duration)</li>
+        <li>Vulnerability findings (location, type, severity)</li>
+        <li>Severity counts (critical, high, medium, low)</li>
+      </ul>
+      <p><strong>Important:</strong> Scan reports DO NOT contain your repository code or source files.</p>
+      <p><strong>Storage:</strong> Reports are stored temporarily in your session and automatically deleted on logout.</p>
+
+      <h3>2.3 Information Automatically Collected</h3>
+      
+      <h4>Technical Information</h4>
+      <ul class="legal-list">
+        <li>IP address</li>
+        <li>Browser type and version</li>
+        <li>Device type and operating system</li>
+        <li>Pages visited and actions taken</li>
+        <li>Timestamps and referrer information</li>
+      </ul>
+      <p><strong>Purpose:</strong> To operate the service, prevent abuse, and improve performance.</p>
+      <p><strong>Storage:</strong> Stored in server logs (retained for security and debugging purposes).</p>
+
+      <h4>Cookies and Tracking</h4>
+      <p>
+        We use session cookies to maintain your authentication state. These cookies are HTTP-only and Secure (only transmitted over HTTPS).
+      </p>
+      <ul class="legal-list">
+        <li><strong>Session Cookie:</strong> Maintains your login state</li>
+        <li><strong>CSRF Token:</strong> Protects against cross-site request forgery attacks</li>
+      </ul>
+    </section>
+
+    <section class="legal-section">
+      <h2>3. What We Do NOT Collect or Store</h2>
+      <p>
+        GVD operates on a local-first principle. The following information is NEVER collected or stored:
+      </p>
+      <ul class="legal-list">
+        <li><strong>Repository Code:</strong> Your source code is never uploaded to our servers</li>
+        <li><strong>Repository Contents:</strong> File contents remain on your local machine</li>
+        <li><strong>Permanent Scan History:</strong> Scans are not recorded in a persistent database</li>
+        <li><strong>Full Git History:</strong> Although we analyze git history during scanning, this data is not stored permanently</li>
+        <li><strong>Financial Information:</strong> We do not collect credit card or payment information (service is free)</li>
+      </ul>
+    </section>
+
+    <section class="legal-section">
+      <h2>4. How We Use Your Information</h2>
+      
+      <h3>4.1 Primary Uses</h3>
+      <ul class="legal-list">
+        <li><strong>Service Delivery:</strong> To provide repository scanning and vulnerability detection</li>
+        <li><strong>Authentication:</strong> To verify your identity and maintain your session</li>
+        <li><strong>GitHub Integration:</strong> To access and scan repositories on your behalf</li>
+        <li><strong>Report Generation:</strong> To create vulnerability reports for your review</li>
+      </ul>
+
+      <h3>4.2 Secondary Uses</h3>
+      <ul class="legal-list">
+        <li><strong>Service Improvement:</strong> To understand how the service is used and improve features</li>
+        <li><strong>Security:</strong> To detect and prevent abuse, fraud, and security incidents</li>
+        <li><strong>Debugging:</strong> To troubleshoot errors and optimize performance</li>
+        <li><strong>Communication:</strong> To send critical notifications about your scans</li>
+      </ul>
+
+      <h3>4.3 Uses We Will NEVER Do</h3>
+      <ul class="legal-list">
+        <li>Sell or share your personal information with third parties</li>
+        <li>Use your data for marketing purposes without explicit consent</li>
+        <li>Share your repository information with other users</li>
+        <li>Analyze your code for purposes other than vulnerability detection</li>
+      </ul>
+    </section>
+
+    <section class="legal-section">
+      <h2>5. Data Security</h2>
+      
+      <h3>5.1 Security Measures</h3>
+      <p>
+        We implement comprehensive security measures to protect your data:
+      </p>
+      <ul class="legal-list">
+        <li><strong>HTTPS Encryption:</strong> All data in transit is encrypted using TLS/SSL</li>
+        <li><strong>Session Security:</strong> HTTP-only, Secure cookies with CSRF protection</li>
+        <li><strong>Token Management:</strong> GitHub access tokens are stored securely server-side</li>
+        <li><strong>Input Validation:</strong> All user inputs are validated and sanitized</li>
+        <li><strong>Error Handling:</strong> Sensitive tokens are redacted in error messages and logs</li>
+        <li><strong>Access Control:</strong> Access to your data requires authentication</li>
+      </ul>
+
+      <h3>5.2 Data Retention</h3>
+      
+      <h4>Session-Based Data (Automatic Deletion)</h4>
+      <ul class="legal-list">
+        <li>Scan reports: Deleted on logout or after 24 hours</li>
+        <li>Notifications: Deleted on logout or after 24 hours</li>
+        <li>Session information: Deleted on logout or after 24 hours</li>
+      </ul>
+
+      <h4>Account Information</h4>
+      <p>Your GitHub profile information is retained as long as your account is active.</p>
+
+      <h4>Server Logs</h4>
+      <p>Server logs containing technical information are retained for security and debugging purposes and are regularly purged according to security practices.</p>
+    </section>
+
+    <section class="legal-section">
+      <h2>6. Third-Party Services</h2>
+      
+      <h3>6.1 GitHub Integration</h3>
+      <p>
+        GVD integrates with GitHub to authenticate users and access repositories. When you use GVD:
+      </p>
+      <ul class="legal-list">
+        <li>You authenticate through GitHub's OAuth system</li>
+        <li>GitHub processes your authentication request</li>
+        <li>We receive your GitHub user profile and an access token</li>
+        <li>We use the token to access your repositories</li>
+      </ul>
+      <p>
+        Please refer to <a href="https://github.com/privacy" target="_blank" class="legal-link">GitHub's Privacy Policy</a> for information about how GitHub handles your data.
+      </p>
+
+      <h3>6.2 Third-Party Services We Do NOT Use</h3>
+      <p>
+        GVD does not integrate with analytics services, advertising networks, or other third-party data processors. Your data is not shared with external services.
+      </p>
+    </section>
+
+    <section class="legal-section">
+      <h2>7. Your Rights and Choices</h2>
+      
+      <h3>7.1 Access and Deletion</h3>
+      <p>
+        You have the right to access, correct, and delete your personal information. To exercise these rights:
+      </p>
+      <ul class="legal-list">
+        <li>Logging out immediately deletes all your session data</li>
+        <li>Deleting your GitHub account revokes GVD's access</li>
+      </ul>
+
+      <h3>7.2 Revoking Access</h3>
+      <p>
+        To revoke GVD's access to your GitHub account at any time:
+      </p>
+      <ol class="legal-list">
+        <li>Go to <a href="https://github.com/settings/applications" target="_blank" class="legal-link">GitHub Settings → Connected applications</a></li>
+        <li>Find "GVD" in the list</li>
+        <li>Click "Revoke"</li>
+      </ol>
+      <p>
+        Once revoked, GVD can no longer access your repositories or personal information.
+      </p>
+
+      <h3>7.3 Communication Preferences</h3>
+      <p>
+        We send notifications about your scans (scan started, completed, errors). These are not opt-out because they're integral to the service functionality.
+      </p>
+
+      <h3>7.4 Cookie Control</h3>
+      <p>
+        You can disable cookies in your browser settings. However, this will prevent GVD from functioning properly since session management relies on cookies.
+      </p>
+    </section>
+
+    <section class="legal-section">
+      <h2>8. Data Residency and Privacy Laws</h2>
+      
+      <h3>8.1 GDPR Compliance</h3>
+      <p>
+        For users in the European Economic Area, GVD complies with the General Data Protection Regulation (GDPR):
+      </p>
+      <ul class="legal-list">
+        <li>We collect only necessary data</li>
+        <li>We process data only for specified purposes</li>
+        <li>We maintain data security and integrity</li>
+        <li>We provide rights of access and deletion</li>
+        <li>You can withdraw consent at any time by revoking access</li>
+      </ul>
+
+      <h3>8.2 Other Privacy Laws</h3>
+      <p>
+        GVD complies with applicable privacy laws including CCPA, PIPEDA, and other regional regulations. If you have questions about privacy compliance, please contact us.
+      </p>
+    </section>
+
+    <section class="legal-section">
+      <h2>9. Contact Us</h2>
+      <p>
+        If you have questions about this Privacy Policy or our privacy practices, please visit our 
+        <a href="{{ url_for('support') }}" class="legal-link">Support page</a> for contact information.
+      </p>
+    </section>
+
+    <section class="legal-section">
+      <h2>10. Changes to This Policy</h2>
+      <p>
+        We may update this Privacy Policy from time to time. We will notify you of any significant changes by posting the new Privacy Policy on this page and updating the "Last Updated" date.
+      </p>
+      <p>
+        Your continued use of GVD following the posting of revised Privacy Policy means that you accept and agree to the changes.
+      </p>
+    </section>
+  </div>
+
+  <nav class="legal-nav">
+    <a href="{{ url_for('terms_of_service') }}" class="legal-nav-link">Terms of Service</a>
+    <a href="{{ url_for('documentation') }}" class="legal-nav-link">Documentation</a>
+    <a href="{{ url_for('support') }}" class="legal-nav-link">Support</a>
+  </nav>
+</div>
+{% endblock %}

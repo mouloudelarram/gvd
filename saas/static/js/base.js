@@ -217,6 +217,116 @@ window.GVD = {
   },
 
   /**
+   * Notification system - PRODUCTION GRADE
+   */
+  notifications: {
+    list: [],
+    unreadCount: 0,
+    pollInterval: null,
+    
+    async init() {
+      // Load initial notifications
+      await this.refresh();
+      
+      // Poll for new notifications every 5 seconds
+      this.pollInterval = setInterval(() => this.refresh(), 5000);
+    },
+    
+    async refresh() {
+      try {
+        const response = await window.GVD.utils.api.get('/api/notifications');
+        this.list = response.notifications || [];
+        this.unreadCount = response.unread_count || 0;
+        this.updateBadge();
+      } catch (error) {
+        console.warn('Failed to fetch notifications:', error);
+      }
+    },
+    
+    updateBadge() {
+      const btn = document.getElementById('notifications-btn');
+      if (!btn) return;
+      
+      let badge = document.getElementById('notifications-badge');
+      
+      if (this.unreadCount > 0) {
+        if (!badge) {
+          badge = document.createElement('span');
+          badge.id = 'notifications-badge';
+          badge.className = 'notification-badge';
+          btn.appendChild(badge);
+        }
+        badge.textContent = this.unreadCount;
+      } else if (badge) {
+        badge.remove();
+      }
+    },
+    
+    async markAsRead(notificationId) {
+      try {
+        await window.GVD.utils.api.post(`/api/notifications/${notificationId}/read`, {});
+        await this.refresh();
+      } catch (error) {
+        console.error('Failed to mark notification as read:', error);
+      }
+    },
+    
+    async clearAll() {
+      try {
+        await window.GVD.utils.api.post('/api/notifications/clear', {});
+        await this.refresh();
+      } catch (error) {
+        console.error('Failed to clear notifications:', error);
+      }
+    },
+    
+    show() {
+      const btn = document.getElementById('notifications-btn');
+      if (!btn) return;
+      
+      // Create notification dropdown if not exists
+      let dropdown = document.getElementById('notifications-dropdown');
+      if (!dropdown) {
+        dropdown = document.createElement('div');
+        dropdown.id = 'notifications-dropdown';
+        dropdown.className = 'notifications-dropdown';
+        btn.parentElement.appendChild(dropdown);
+      }
+      
+      if (this.list.length === 0) {
+        dropdown.innerHTML = '<div class="notification-empty">No notifications</div>';
+      } else {
+        dropdown.innerHTML = this.list.map(n => `
+          <div class="notification-item ${n.read ? '' : 'unread'}" data-notification-id="${window.GVD.utils.escapeHtml(n.id)}">
+            <div class="notification-content">
+              <div class="notification-title">${window.GVD.utils.escapeHtml(n.title)}</div>
+              <div class="notification-message">${window.GVD.utils.escapeHtml(n.message)}</div>
+              <div class="notification-time">${window.GVD.utils.timeAgo(n.created_at)}</div>
+            </div>
+          </div>
+        `).join('');
+        
+        // Wire up click handlers
+        dropdown.querySelectorAll('.notification-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const notifId = item.dataset.notificationId;
+            window.GVD.notifications.markAsRead(notifId);
+          });
+        });
+      }
+      
+      dropdown.hidden = false;
+    },
+    
+    hide() {
+      const dropdown = document.getElementById('notifications-dropdown');
+      if (dropdown) {
+        dropdown.hidden = true;
+      }
+    }
+  },
+
+  /**
    * Loading helpers
    */
   loading: {
@@ -268,18 +378,25 @@ document.addEventListener("DOMContentLoaded", () => {
   /**
    * Notifications
    */
+  // Initialize notification system
+  window.GVD.notifications.init();
+
+  // Wire up notifications button
   const notificationsBtn = document.getElementById("notifications-btn");
-
   if (notificationsBtn) {
-    notificationsBtn.addEventListener("click", e => {
+    notificationsBtn.addEventListener("click", (e) => {
       e.preventDefault();
-
-      window.GVD.toast.show(
-        "Notifications coming soon!",
-        "info"
-      );
+      e.stopPropagation();
+      window.GVD.notifications.show();
     });
   }
+
+  // Close notifications when clicking outside
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#notifications-btn") && !e.target.closest("#notifications-dropdown")) {
+      window.GVD.notifications.hide();
+    }
+  });
 
   /**
    * Modal close buttons

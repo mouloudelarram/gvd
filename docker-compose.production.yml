@@ -1,0 +1,303 @@
+version: '3.9'
+
+# ============================================================================
+# GVD PRODUCTION DOCKER COMPOSE CONFIGURATION
+# ============================================================================
+# Deployment-ready configuration for AWS EC2, VPS, and cloud platforms
+# Supports local development, staging, and production environments
+# ============================================================================
+
+services:
+
+  # ========================================================================
+  # NGINX REVERSE PROXY
+  # ========================================================================
+  # Production-grade reverse proxy with SSL/TLS, compression, and security headers
+  
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: gvd-nginx
+    restart: always
+    
+    ports:
+      - "80:80"
+      - "443:443"
+    
+    volumes:
+      # Configuration
+      - ./nginx/nginx-production.conf:/etc/nginx/nginx.conf:ro
+      
+      # Static assets (can be mounted from Flask container or directly)
+      - ./saas/static:/app/static:ro
+      
+      # SSL certificates (for Let's Encrypt)
+      - gvd-ssl-certs:/etc/nginx/ssl:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+      
+      # Logs
+      - gvd-nginx-logs:/var/log/nginx
+    
+    networks:
+      - gvd-network
+    
+    depends_on:
+      gvd-saas:
+        condition: service_healthy
+    
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    
+    environment:
+      - NGINX_ENTRYPOINT_QUIET_LOGS=1
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 512M
+        reservations:
+          cpus: '1'
+          memory: 256M
+
+
+  # ========================================================================
+  # FLASK BACKEND (GUNICORN)
+  # ========================================================================
+  # Main web application with production WSGI server
+  
+  gvd-saas:
+    build:
+      context: ./saas
+      dockerfile: Dockerfile.prod
+    
+    container_name: gvd-saas
+    restart: always
+    
+    # Only expose internally to Nginx (not to host)
+    expose:
+      - "5000"
+    
+    networks:
+      - gvd-network
+    
+    environment:
+      # Flask Configuration
+      - FLASK_ENV=production
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      
+      # Application Configuration
+      - LOG_LEVEL=INFO
+      
+      # Storage Configuration
+      - SCAN_REPORTS_DIR=/app/scan_reports
+      - REPOS_DIR=/app/repos
+      - UPLOADS_DIR=/app/uploads
+      - TEMP_DIR=/app/temp
+    
+    # Load environment variables from file
+    env_file:
+      - .env.production
+    
+    volumes:
+      # Application code
+      - ./saas:/app:ro
+      
+      # Persistent data volumes
+      - gvd-scan-reports:/app/scan_reports
+      - gvd-repos:/app/repos
+      - gvd-uploads:/app/uploads
+      - gvd-temp:/app/temp
+      
+      # Logs
+      - gvd-app-logs:/app/logs
+      
+      # Configuration
+      - ./saas/gunicorn_config.py:/app/gunicorn_config.py:ro
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 2G
+        reservations:
+          cpus: '2'
+          memory: 1G
+
+
+  # ========================================================================
+  # CLI SCANNER SERVICE
+  # ========================================================================
+  # Background scanner for repository analysis and report generation
+  # Can be scaled horizontally for parallel scanning
+  
+  gvd-scanner:
+    build:
+      context: ./cli
+      dockerfile: Dockerfile.prod
+    
+    container_name: gvd-scanner
+    restart: always
+    
+    # No ports exposed - internal service only
+    networks:
+      - gvd-network
+    
+    environment:
+      - PYTHONPATH=/app
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - LOG_LEVEL=INFO
+    
+    volumes:
+      # Application code
+      - ./cli:/app:ro
+      
+      # Shared volumes with main app
+      - gvd-scan-reports:/app/reports
+      - gvd-repos:/app/repos
+      - gvd-temp:/app/temp
+      
+      # Logs
+      - gvd-scanner-logs:/app/logs
+    
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    
+    # Resource limits (can be scaled up)
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 1G
+        reservations:
+          cpus: '1'
+          memory: 512M
+    
+    # Override default command for background scanning
+    # Uncomment and adjust based on your scanning strategy
+    # command: ["python", "cli.py", "scan", "--path", "/app/repos", "--output", "/app/reports"]
+
+
+  # ========================================================================
+  # CERTBOT - LET'S ENCRYPT SSL/TLS AUTOMATION
+  # ========================================================================
+  # Automatic SSL certificate generation and renewal
+  # Uncomment to enable automatic HTTPS setup
+  
+  # certbot:
+  #   image: certbot/certbot:latest
+  #   container_name: gvd-certbot
+  #   
+  #   volumes:
+  #     - ./certbot/conf:/etc/letsencrypt
+  #     - ./certbot/www:/var/www/certbot
+  #   
+  #   networks:
+  #     - gvd-network
+  #   
+  #   entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew --quiet; sleep 12h & wait $!; done;'"
+  #   
+  #   restart: always
+  #   
+  #   depends_on:
+  #     - nginx
+
+
+# ============================================================================
+# VOLUMES - PERSISTENT STORAGE
+# ============================================================================
+# Named volumes for data persistence across container restarts
+
+volumes:
+  
+  # Application data
+  gvd-scan-reports:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/scan_reports
+  
+  gvd-repos:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/repos
+  
+  gvd-uploads:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/uploads
+  
+  gvd-temp:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/temp
+  
+  # SSL Certificates
+  gvd-ssl-certs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/ssl
+  
+  # Logs
+  gvd-nginx-logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./logs/nginx
+  
+  gvd-app-logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./logs/app
+  
+  gvd-scanner-logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./logs/scanner
+
+
+# ============================================================================
+# NETWORKS - SERVICE COMMUNICATION
+# ============================================================================
+# Internal network for secure container-to-container communication
+
+networks:
+  gvd-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.23.0.0/16

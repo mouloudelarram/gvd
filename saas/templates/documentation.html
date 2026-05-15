@@ -1,0 +1,544 @@
+{% extends "base.html" %}
+
+{% block title %}Documentation - GVD{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/documentation.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="docs-container">
+  <!-- Sidebar Navigation -->
+  <aside class="docs-sidebar">
+    <div class="docs-sidebar-header">
+      <h2>Documentation</h2>
+    </div>
+    
+    <nav class="docs-nav">
+      <ul class="docs-nav-list">
+        <li><a href="#overview" class="docs-nav-link">Overview</a></li>
+        <li><a href="#getting-started" class="docs-nav-link">Getting Started</a></li>
+        <li><a href="#authentication" class="docs-nav-link">Authentication</a></li>
+        <li><a href="#dashboard" class="docs-nav-link">Dashboard</a></li>
+        <li><a href="#scanning" class="docs-nav-link">Scanning</a></li>
+        <li><a href="#reports" class="docs-nav-link">Reports</a></li>
+        <li><a href="#notifications" class="docs-nav-link">Notifications</a></li>
+        <li><a href="#privacy" class="docs-nav-link">Privacy & Security</a></li>
+        <li><a href="#faq" class="docs-nav-link">FAQ</a></li>
+        <li><a href="#troubleshooting" class="docs-nav-link">Troubleshooting</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="docs-content">
+    <!-- Overview Section -->
+    <section id="overview" class="docs-section">
+      <h1>GVD Documentation</h1>
+      <p class="docs-intro">
+        Welcome to GVD (GitHub Vulnerability Detector). This guide covers how to use the platform to scan your GitHub repositories for security vulnerabilities.
+      </p>
+
+      <div class="docs-highlight">
+        <h3>What is GVD?</h3>
+        <p>
+          GVD is a security-first GitHub integration that scans your repositories for secrets, sensitive files, and security risks. Using a local-first approach, your repository code never leaves your environment—only security reports are generated and shared with you.
+        </p>
+        <ul class="docs-list">
+          <li><strong>Local-First:</strong> Repositories are scanned on your local machine. Code never leaves your environment.</li>
+          <li><strong>Comprehensive:</strong> Detects secrets, API keys, tokens, and security configuration issues.</li>
+          <li><strong>Session-Based:</strong> Results are stored temporarily during your session and automatically cleared on logout.</li>
+          <li><strong>GitHub Integrated:</strong> Seamless login with your GitHub account and automatic repository discovery.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Getting Started -->
+    <section id="getting-started" class="docs-section">
+      <h2>Getting Started</h2>
+      
+      <div class="docs-step">
+        <h3>Step 1: Create Your Account</h3>
+        <p>Visit GVD and click "Continue with GitHub" to sign up.</p>
+        <ul class="docs-list">
+          <li>You'll be redirected to GitHub's authorization page</li>
+          <li>Review the requested permissions (repository access, user profile)</li>
+          <li>Click "Authorize" to grant access</li>
+          <li>You'll be redirected back to GVD and logged in</li>
+        </ul>
+      </div>
+
+      <div class="docs-step">
+        <h3>Step 2: Explore Your Dashboard</h3>
+        <p>After logging in, you'll see your GitHub repositories displayed in a grid.</p>
+        <ul class="docs-list">
+          <li>Each card shows repository name, visibility status, and description</li>
+          <li>Use search to find specific repositories</li>
+          <li>Filter by public/private repositories</li>
+          <li>Scroll to load more repositories ("See more" button)</li>
+        </ul>
+      </div>
+
+      <div class="docs-step">
+        <h3>Step 3: Initiate a Scan</h3>
+        <p>Click the "Scan" button on any repository to begin scanning.</p>
+        <ul class="docs-list">
+          <li>The repository will be cloned and analyzed locally</li>
+          <li>A progress indicator shows scan status</li>
+          <li>Results appear once the scan completes</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Authentication -->
+    <section id="authentication" class="docs-section">
+      <h2>Authentication</h2>
+      
+      <h3>GitHub OAuth Login</h3>
+      <p>
+        GVD uses GitHub OAuth for secure authentication. This means you sign in using your existing GitHub account without sharing your password with GVD.
+      </p>
+
+      <div class="docs-subsection">
+        <h4>What Permissions Does GVD Request?</h4>
+        <ul class="docs-list">
+          <li><strong>repo:</strong> Access to your repositories (needed to clone and scan)</li>
+          <li><strong>read:user:</strong> Access to your profile information (name, email)</li>
+        </ul>
+        <p>These permissions are required to discover and scan your repositories. GVD does not require write access.</p>
+      </div>
+
+      <div class="docs-subsection">
+        <h4>Session Management</h4>
+        <ul class="docs-list">
+          <li>Your session is stored securely in a browser cookie</li>
+          <li>The session includes your GitHub access token (securely stored server-side)</li>
+          <li>Sessions automatically expire after 24 hours</li>
+          <li>Clicking "Logout" immediately clears your session and all temporary data</li>
+        </ul>
+      </div>
+
+      <div class="docs-subsection">
+        <h4>Revoking Access</h4>
+        <p>
+          You can revoke GVD's access to your GitHub account at any time through your GitHub settings:
+        </p>
+        <ul class="docs-list">
+          <li>Go to <a href="https://github.com/settings/applications" target="_blank">GitHub Settings → Connected applications</a></li>
+          <li>Find "GVD" in the list</li>
+          <li>Click "Revoke" to remove access</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Dashboard -->
+    <section id="dashboard" class="docs-section">
+      <h2>Dashboard</h2>
+      
+      <h3>Repository Overview</h3>
+      <p>
+        The dashboard displays all GitHub repositories you have access to. Each repository card shows:
+      </p>
+      <ul class="docs-list">
+        <li><strong>Name:</strong> The repository name</li>
+        <li><strong>Visibility:</strong> Badge indicating Public or Private</li>
+        <li><strong>Description:</strong> Repository description from GitHub</li>
+        <li><strong>Scan Button:</strong> Initiate a vulnerability scan</li>
+      </ul>
+
+      <h3>Search and Filter</h3>
+      <div class="docs-subsection">
+        <h4>Search by Repository Name</h4>
+        <p>Use the search box to find repositories by name. Search is performed as you type.</p>
+        
+        <h4>Filter by Visibility</h4>
+        <ul class="docs-list">
+          <li><strong>All Repositories:</strong> Show all accessible repositories</li>
+          <li><strong>Public:</strong> Show only public repositories</li>
+          <li><strong>Private:</strong> Show only private repositories</li>
+        </ul>
+      </div>
+
+      <h3>Metrics</h3>
+      <p>The top of the dashboard shows key metrics:</p>
+      <ul class="docs-list">
+        <li><strong>Total Repositories:</strong> Total number of accessible repositories</li>
+        <li><strong>Public Repos:</strong> Number of public repositories</li>
+        <li><strong>Private Repos:</strong> Number of private repositories</li>
+      </ul>
+    </section>
+
+    <!-- Scanning -->
+    <section id="scanning" class="docs-section">
+      <h2>Scanning Repositories</h2>
+      
+      <h3>Single Repository Scan</h3>
+      <p>Click the "Scan" button on any repository to scan it individually.</p>
+      
+      <div class="docs-process">
+        <ol class="docs-numbered-list">
+          <li><strong>Clone:</strong> The repository is cloned to a temporary local directory</li>
+          <li><strong>Analyze:</strong> The local clone is scanned for vulnerabilities</li>
+          <li><strong>Report:</strong> A detailed security report is generated</li>
+          <li><strong>Display:</strong> Results are shown in the scan results modal</li>
+        </ol>
+      </div>
+
+      <h3>Bulk Scan</h3>
+      <p>Click the "Scan All" button to scan all your repositories at once.</p>
+      
+      <div class="docs-subsection">
+        <h4>Bulk Scan Features</h4>
+        <ul class="docs-list">
+          <li><strong>Real-time Progress:</strong> Watch the progress bar update as repositories are scanned</li>
+          <li><strong>Live Statistics:</strong> See vulnerability counts by severity as scanning progresses</li>
+          <li><strong>Live Logs:</strong> View scanning activity in real-time</li>
+          <li><strong>Stop Option:</strong> Stop the bulk scan at any time</li>
+          <li><strong>Summary Report:</strong> Comprehensive report of all findings once complete</li>
+        </ul>
+      </div>
+
+      <h3>What Does GVD Scan For?</h3>
+      
+      <div class="docs-subsection">
+        <h4>Secrets and Credentials</h4>
+        <ul class="docs-list">
+          <li>API keys and tokens</li>
+          <li>AWS credentials and access keys</li>
+          <li>Database connection strings</li>
+          <li>Private SSH keys</li>
+          <li>OAuth tokens and secrets</li>
+          <li>Authentication tokens</li>
+        </ul>
+      </div>
+
+      <div class="docs-subsection">
+        <h4>Sensitive Files</h4>
+        <ul class="docs-list">
+          <li>.env files with sensitive configuration</li>
+          <li>Private key files (.pem, .key)</li>
+          <li>Configuration files with credentials</li>
+          <li>Backup files containing sensitive data</li>
+        </ul>
+      </div>
+
+      <div class="docs-subsection">
+        <h4>Git History</h4>
+        <ul class="docs-list">
+          <li>Secrets in commit messages</li>
+          <li>Secrets in previous file versions (even if deleted)</li>
+          <li>Historical configuration files with credentials</li>
+        </ul>
+      </div>
+
+      <h3>Severity Levels</h3>
+      <p>GVD classifies findings into four severity levels:</p>
+      
+      <div class="docs-severity-grid">
+        <div class="severity-item severity-critical">
+          <h4>🔴 Critical</h4>
+          <p>Immediate security threat. Requires immediate action (e.g., exposed database credentials).</p>
+        </div>
+        <div class="severity-item severity-high">
+          <h4>🟠 High</h4>
+          <p>Serious security issue. Should be resolved promptly (e.g., exposed API keys).</p>
+        </div>
+        <div class="severity-item severity-medium">
+          <h4>🟡 Medium</h4>
+          <p>Moderate security concern. Should be addressed (e.g., weak credentials in comments).</p>
+        </div>
+        <div class="severity-item severity-low">
+          <h4>🟢 Low</h4>
+          <p>Low-priority security issue. Can be addressed as part of regular maintenance.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Reports -->
+    <section id="reports" class="docs-section">
+      <h2>Reports</h2>
+      
+      <h3>Report Formats</h3>
+      <p>GVD generates security reports in multiple formats:</p>
+      
+      <div class="docs-subsection">
+        <h4>JSON Report</h4>
+        <p>
+          A structured JSON document containing all findings, metadata, and analysis details. Perfect for programmatic access and integration with other tools.
+        </p>
+        <p><strong>Contains:</strong> Repository info, scan metadata, complete findings list, severity counts, recommendations</p>
+      </div>
+
+      <div class="docs-subsection">
+        <h4>PDF Report</h4>
+        <p>
+          A professional, printable PDF report with organized findings, severity breakdown, and recommendations. Ideal for security reviews and documentation.
+        </p>
+        <p><strong>Contains:</strong> Executive summary, findings organized by severity, recommendations, scan details</p>
+      </div>
+
+      <h3>Report Contents</h3>
+      <ul class="docs-list">
+        <li><strong>Repository Information:</strong> Repository name, owner, URL, scan date/time</li>
+        <li><strong>Summary Statistics:</strong> Total findings, breakdown by severity</li>
+        <li><strong>Detailed Findings:</strong> Each finding includes location, type, severity, and recommendation</li>
+        <li><strong>Remediation Advice:</strong> Suggestions for fixing each issue</li>
+        <li><strong>Scan Metadata:</strong> Scan duration, repository size, scanning engine version</li>
+      </ul>
+
+      <h3>Downloading and Sharing Reports</h3>
+      <p>
+        After a scan completes, you can view and download reports directly from the results modal. Reports are stored temporarily in your session and are automatically deleted when you log out.
+      </p>
+    </section>
+
+    <!-- Notifications -->
+    <section id="notifications" class="docs-section">
+      <h2>Notifications</h2>
+      
+      <h3>Notification Types</h3>
+      <p>
+        GVD sends notifications for important events during your scanning workflow:
+      </p>
+      
+      <div class="docs-subsection">
+        <h4>Scan Started</h4>
+        <p>Notification when a repository scan begins.</p>
+      </div>
+
+      <div class="docs-subsection">
+        <h4>Scan Completed</h4>
+        <p>Notification when a scan finishes, including findings summary.</p>
+      </div>
+
+      <div class="docs-subsection">
+        <h4>Critical Finding</h4>
+        <p>Alert when a critical-severity vulnerability is discovered.</p>
+      </div>
+
+      <div class="docs-subsection">
+        <h4>Scan Error</h4>
+        <p>Notification if a scan fails with error details.</p>
+      </div>
+
+      <h3>Viewing Notifications</h3>
+      <p>
+        Click the notification bell icon (🔔) in the top navigation bar to view your recent notifications. Unread notifications are indicated with a badge showing the count.
+      </p>
+    </section>
+
+    <!-- Privacy & Security -->
+    <section id="privacy" class="docs-section">
+      <h2>Privacy & Security</h2>
+      
+      <h3>Local-First Architecture</h3>
+      <p>
+        GVD operates on a local-first principle: your repository code never leaves your machine. Here's how it works:
+      </p>
+      
+      <ol class="docs-numbered-list">
+        <li>You authorize GVD via GitHub OAuth</li>
+        <li>You select a repository to scan</li>
+        <li>GVD clones the repository to a temporary local directory on your machine</li>
+        <li>The local clone is analyzed for vulnerabilities</li>
+        <li>Only the security report is generated and stored (not the code)</li>
+        <li>The temporary repository clone is deleted</li>
+        <li>You view/download the report</li>
+      </ol>
+
+      <p><strong>Bottom line:</strong> Your repository code is never uploaded to GVD servers.</p>
+
+      <h3>Session-Based Storage</h3>
+      <p>
+        All reports and scan results are stored temporarily in your session during login. Once you log out, all temporary data is automatically deleted:
+      </p>
+      <ul class="docs-list">
+        <li>Session reports are stored server-side in memory (not in a database)</li>
+        <li>No permanent database of your scans is maintained</li>
+        <li>Logging out immediately clears all session data</li>
+        <li>Sessions automatically expire after 24 hours</li>
+      </ul>
+
+      <h3>What Data Does GVD Store?</h3>
+      <ul class="docs-list">
+        <li>Your GitHub user profile (name, email, avatar)</li>
+        <li>Your GitHub access token (securely stored server-side)</li>
+        <li>Scan reports (temporary, session-based)</li>
+      </ul>
+
+      <p><strong>What GVD does NOT store:</strong></p>
+      <ul class="docs-list">
+        <li>Repository code or source files</li>
+        <li>Permanent scan history or results</li>
+        <li>Information about findings after you log out</li>
+        <li>Any data unrelated to scanning</li>
+      </ul>
+
+      <h3>Security Features</h3>
+      <ul class="docs-list">
+        <li><strong>HTTPS Only:</strong> All communication is encrypted in transit</li>
+        <li><strong>OAuth:</strong> Industry-standard authentication through GitHub</li>
+        <li><strong>Session Security:</strong> Secure HTTP-only cookies with CSRF protection</li>
+        <li><strong>Token Redaction:</strong> Sensitive tokens are redacted in logs</li>
+        <li><strong>Input Validation:</strong> All user inputs are validated and sanitized</li>
+      </ul>
+
+      <h3>Privacy Policy</h3>
+      <p>
+        For detailed information about how GVD handles your data, see our 
+        <a href="{{ url_for('privacy_policy') }}" class="docs-link">Privacy Policy</a>.
+      </p>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq" class="docs-section">
+      <h2>Frequently Asked Questions</h2>
+      
+      <div class="docs-faq-item">
+        <h4>Is my code uploaded to GVD?</h4>
+        <p>
+          No. GVD uses a local-first approach. Your code is cloned locally, scanned locally, and then the temporary clone is deleted. Only the security report is retained.
+        </p>
+      </div>
+
+      <div class="docs-faq-item">
+        <h4>How long are my scan results stored?</h4>
+        <p>
+          Scan results are stored in your session while you're logged in. When you log out or your session expires (24 hours), all results are automatically deleted.
+        </p>
+      </div>
+
+      <div class="docs-faq-item">
+        <h4>Can I scan private repositories?</h4>
+        <p>
+          Yes. GVD can scan any repository you have access to on GitHub, including private repositories. The required permissions are handled through GitHub OAuth.
+        </p>
+      </div>
+
+      <div class="docs-faq-item">
+        <h4>What if a scan fails?</h4>
+        <p>
+          If a scan fails, you'll receive a notification with an error message. Common causes include network errors during cloning or insufficient permissions. See Troubleshooting for solutions.
+        </p>
+      </div>
+
+      <div class="docs-faq-item">
+        <h4>How can I revoke GVD's access?</h4>
+        <p>
+          Go to <a href="https://github.com/settings/applications" target="_blank">GitHub Settings → Connected applications</a> and click "Revoke" next to GVD.
+        </p>
+      </div>
+
+      <div class="docs-faq-item">
+        <h4>Can I download my reports?</h4>
+        <p>
+          Yes. After a scan completes, click "Download JSON" or "Download PDF" to save the report to your computer.
+        </p>
+      </div>
+
+      <div class="docs-faq-item">
+        <h4>Can I schedule automated scans?</h4>
+        <p>
+          Currently, scans are manual. You can initiate scans individually or use the bulk scan feature to scan all repositories at once.
+        </p>
+      </div>
+
+      <div class="docs-faq-item">
+        <h4>How accurate are the findings?</h4>
+        <p>
+          GVD uses pattern-based detection for common secret formats. While the system is highly accurate for known patterns, no scanning tool is 100% perfect. Always review findings and treat them as guidance rather than definitive proof.
+        </p>
+      </div>
+
+      <div class="docs-faq-item">
+        <h4>What if I find a false positive?</h4>
+        <p>
+          If a finding is incorrect, you can dismiss it from the report. GVD may learn from feedback to improve accuracy over time.
+        </p>
+      </div>
+
+      <div class="docs-faq-item">
+        <h4>Is GVD free?</h4>
+        <p>
+          Yes, GVD is currently free to use. You only need a GitHub account to get started.
+        </p>
+      </div>
+    </section>
+
+    <!-- Troubleshooting -->
+    <section id="troubleshooting" class="docs-section">
+      <h2>Troubleshooting</h2>
+      
+      <div class="docs-faq-item">
+        <h4>GitHub Authentication Fails</h4>
+        <p><strong>Solution:</strong></p>
+        <ul class="docs-list">
+          <li>Ensure you have a valid GitHub account</li>
+          <li>Check that your GitHub account has access to the repositories you want to scan</li>
+          <li>Clear your browser cookies and try again</li>
+          <li>Ensure JavaScript is enabled in your browser</li>
+        </ul>
+      </div>
+
+      <div class="docs-faq-item">
+        <h4>Repository Scan Fails</h4>
+        <p><strong>Solutions:</strong></p>
+        <ul class="docs-list">
+          <li>Verify you have access to the repository on GitHub</li>
+          <li>Check your internet connection</li>
+          <li>Try scanning a smaller repository first</li>
+          <li>Wait a few minutes and try again (temporary network issue)</li>
+        </ul>
+      </div>
+
+      <div class="docs-faq-item">
+        <h4>Scan Takes Too Long</h4>
+        <p><strong>Solutions:</strong></p>
+        <ul class="docs-list">
+          <li>Large repositories take longer to clone and scan. This is normal.</li>
+          <li>For repositories over 1GB, consider scanning public repositories instead</li>
+          <li>You can stop a slow scan and try again later</li>
+        </ul>
+      </div>
+
+      <div class="docs-faq-item">
+        <h4>Notifications Don't Appear</h4>
+        <p><strong>Solutions:</strong></p>
+        <ul class="docs-list">
+          <li>Check that your browser hasn't blocked notifications</li>
+          <li>Ensure JavaScript is enabled</li>
+          <li>Try refreshing the page</li>
+          <li>Check the notification bell icon for pending notifications</li>
+        </ul>
+      </div>
+
+      <div class="docs-faq-item">
+        <h4>Can't Find a Repository</h4>
+        <p><strong>Solutions:</strong></p>
+        <ul class="docs-list">
+          <li>Verify the repository is accessible from your GitHub account</li>
+          <li>Check the repository visibility (public vs private)</li>
+          <li>Use the filter to check "All Repositories"</li>
+          <li>Try searching by repository name</li>
+          <li>Log out and log back in to refresh your repository list</li>
+        </ul>
+      </div>
+
+      <div class="docs-faq-item">
+        <h4>Session Expired</h4>
+        <p><strong>Solution:</strong></p>
+        <p>Sessions automatically expire after 24 hours. Simply log in again to start a new session.</p>
+      </div>
+    </section>
+
+    <!-- Support Section -->
+    <section id="support" class="docs-section">
+      <h2>Need More Help?</h2>
+      <p>
+        If you can't find the answer to your question, visit our 
+        <a href="{{ url_for('support') }}" class="docs-link">Support page</a> for additional resources and contact information.
+      </p>
+    </section>
+  </main>
+</div>
+{% endblock %}
