@@ -18,7 +18,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Copy requirements
 COPY pyproject.toml .
-COPY requirements-dev.txt . 2>/dev/null || true
 
 # Create wheels for all dependencies
 RUN pip install --no-cache-dir --user \
