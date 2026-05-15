@@ -128,7 +128,16 @@ fi
 
 print_header "Building Docker Images"
 
-if docker compose -f docker-compose.production.yml build 2>&1 | grep -q "ERROR"; then
+# Use docker-compose.yml by default, unless --production flag specified
+COMPOSE_FILE="docker-compose.yml"
+if [ "$1" = "--production" ]; then
+    COMPOSE_FILE="docker-compose.production.yml"
+    print_info "Using production compose file"
+else
+    print_info "Using development compose file"
+fi
+
+if docker compose -f "$COMPOSE_FILE" build 2>&1 | grep -q "ERROR"; then
     print_error "Docker build failed"
     exit 1
 fi
@@ -136,7 +145,7 @@ print_success "Docker images built successfully"
 
 print_header "Starting GVD Services"
 
-docker compose -f docker-compose.production.yml up -d
+docker compose -f "$COMPOSE_FILE" up -d --remove-orphans
 
 # ============================================================================
 # VERIFICATION
@@ -146,12 +155,16 @@ print_header "Verifying Services"
 
 sleep 3
 
-# Check service status
-SERVICES=("nginx" "gvd-saas" "gvd-scanner")
+# Check service status based on which compose file is used
+if [ "$1" = "--production" ]; then
+    SERVICES=("gvd-nginx" "gvd-saas" "gvd-scanner")
+else
+    SERVICES=("gvd-saas" "gvd-cli")
+fi
 ALL_HEALTHY=true
 
 for service in "${SERVICES[@]}"; do
-    if docker compose -f docker-compose.production.yml ps "$service" | grep -q "Up"; then
+    if docker compose -f "$COMPOSE_FILE" ps "$service" 2>/dev/null | grep -q "Up"; then
         print_success "Service running: $service"
     else
         print_warning "Service not fully ready: $service (may still be starting)"
@@ -167,23 +180,29 @@ print_header "GVD Started Successfully!"
 
 echo ""
 echo "📊 Service Status:"
-docker compose -f docker-compose.production.yml ps
+docker compose -f "$COMPOSE_FILE" ps
 echo ""
 
 echo "🌐 Access Points:"
-print_info "Web Interface: http://localhost"
-print_info "API: http://localhost/api"
-print_info "Flask (internal): http://localhost:5000 (not exposed)"
+if [ "$1" = "--production" ]; then
+    print_info "Web Interface: http://localhost"
+    print_info "API: http://localhost/api"
+else
+    print_info "Web Interface: http://localhost:5000"
+    print_info "API: http://localhost:5000/api"
+fi
 echo ""
 
 echo "📋 Useful Commands:"
-echo "  View logs (all services):     docker compose -f docker-compose.production.yml logs -f"
-echo "  View Flask logs:              docker compose -f docker-compose.production.yml logs -f gvd-saas"
-echo "  View Nginx logs:              docker compose -f docker-compose.production.yml logs -f nginx"
-echo "  Check services:               docker compose -f docker-compose.production.yml ps"
-echo "  Stop all services:            docker compose -f docker-compose.production.yml down"
-echo "  Stop + remove volumes:        docker compose -f docker-compose.production.yml down -v"
-echo "  Enter container:              docker compose -f docker-compose.production.yml exec gvd-saas bash"
+echo "  View logs (all services):     docker compose -f $COMPOSE_FILE logs -f"
+echo "  View Flask logs:              docker compose -f $COMPOSE_FILE logs -f gvd-saas"
+if [ "$1" = "--production" ]; then
+    echo "  View Nginx logs:              docker compose -f $COMPOSE_FILE logs -f gvd-nginx"
+fi
+echo "  Check services:               docker compose -f $COMPOSE_FILE ps"
+echo "  Stop all services:            docker compose -f $COMPOSE_FILE down"
+echo "  Stop + remove volumes:        docker compose -f $COMPOSE_FILE down -v"
+echo "  Enter container:              docker compose -f $COMPOSE_FILE exec gvd-saas bash"
 echo "  Monitor resources:            docker stats"
 echo ""
 
@@ -196,7 +215,7 @@ echo ""
 
 if [ "$ALL_HEALTHY" = false ]; then
     print_warning "Some services are still starting. Wait a few seconds and check again:"
-    echo "  docker compose -f docker-compose.production.yml ps"
+    echo "  docker compose -f $COMPOSE_FILE ps"
     echo ""
 fi
 
