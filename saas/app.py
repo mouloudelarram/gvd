@@ -21,10 +21,15 @@ from config import generate_csrf_token, setup_error_handlers, require_login
 
 
 def load_env():
-    """Load environment variables from .env file."""
+    """Load environment variables from .env file (if it exists).
+    
+    In Docker, the env_file directive in docker-compose.yml passes
+    environment variables directly, so the .env file may not exist.
+    This function silently skips loading if the file doesn't exist.
+    """
     env_path = os.path.join(os.path.dirname(__file__), ".env")
     if not os.path.exists(env_path):
-        print(f"Warning: .env file not found at {env_path}")
+        # Silently skip - env vars may be loaded from docker-compose env_file
         return
     try:
         with open(env_path, encoding="utf-8") as f:
@@ -99,6 +104,89 @@ def cleanup_old_session_data(session_id):
     with SESSION_DATA_LOCK:
         SESSION_SCAN_RESULTS.pop(session_id, None)
         SESSION_NOTIFICATIONS.pop(session_id, None)
+
+
+def add_session_notification(notification_type, title, message, data=None):
+    """Add notification to current session"""
+    session_id = get_session_id()
+    with SESSION_DATA_LOCK:
+        if session_id not in SESSION_NOTIFICATIONS:
+            SESSION_NOTIFICATIONS[session_id] = []
+        
+        notification = {
+            "id": uuid.uuid4().hex,
+            "type": notification_type,
+            "title": title,
+            "message": message,
+            "data": data or {},
+            "read": False,
+            "created_at": datetime.utcnow().isoformat() + "Z",
+            "timestamp": int(datetime.utcnow().timestamp() * 1000)
+        }
+        
+        SESSION_NOTIFICATIONS[session_id].append(notification)
+    
+    return notification
+
+# ============================================================================
+# STATISTICS TRACKING (Production-Grade)
+# ============================================================================
+
+# Scan statistics tracked per day
+SCAN_STATISTICS = {}  # {date_str: {"total_scans": int, "findings": {severity: count}}}
+STATISTICS_LOCK = threading.Lock()
+
+
+def get_today_date():
+    """Get today's date in UTC as YYYY-MM-DD string."""
+    return datetime.utcnow().strftime("%Y-%m-%d")
+
+
+def track_scan_completion(scan_result):
+    """Track completed scan in statistics."""
+    if not scan_result:
+        return
+    
+    today = get_today_date()
+    severity_counts = scan_result.get("severity_counts", {})
+    
+    with STATISTICS_LOCK:
+        if today not in SCAN_STATISTICS:
+            SCAN_STATISTICS[today] = {
+                "total_scans": 0,
+                "total_findings": 0,
+                "findings": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
+            }
+        
+        stats = SCAN_STATISTICS[today]
+        stats["total_scans"] += 1
+        stats["total_findings"] += scan_result.get("total_findings", 0)
+        
+        for severity in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
+            stats["findings"][severity] += severity_counts.get(severity, 0)
+
+
+def get_statistics():
+    """Get statistics for today and cumulative high-risk findings."""
+    today = get_today_date()
+    
+    with STATISTICS_LOCK:
+        today_stats = SCAN_STATISTICS.get(today, {
+            "total_scans": 0,
+            "total_findings": 0,
+            "findings": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
+        })
+        
+        # Calculate high-risk findings (CRITICAL + HIGH)
+        high_risk_count = today_stats["findings"].get("CRITICAL", 0) + today_stats["findings"].get("HIGH", 0)
+        
+        return {
+            "scanned_today": today_stats["total_scans"],
+            "high_risk_findings": high_risk_count,
+            "total_findings_today": today_stats["total_findings"],
+            "breakdown": today_stats["findings"],
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        }
 
 
 def add_session_notification(notification_type, title, message, data=None):
@@ -216,32 +304,48 @@ def login():
 
 @app.route("/callback")
 def callback():
-    """Handle GitHub OAuth callback."""
+    """
+    Handle GitHub OAuth callback.
+    Validates CSRF state, exchanges code for token, fetches user profile.
+    """
     try:
+        # Exchange OAuth code for access token (validates state internally)
         token = get_github_token()
+        
+        # Fetch user profile
         user = get_github_user(token)
+        
+        # Store in session
         session["access_token"] = token
         session["user"] = user
         session.permanent = True
+        
+        app.logger.info(f"User {user['login']} successfully authenticated")
         return redirect(url_for("dashboard"))
+        
     except ValueError as e:
         # OAuth validation error (CSRF, invalid code, etc.)
+        app.logger.warning(f"OAuth validation error: {e}")
         return render_template("error.html",
                              status=400,
                              message="Authentication Error",
-                             detail=str(e)), 400
+                             detail=f"Authentication failed: {str(e)}"), 400
+                             
     except RuntimeError as e:
-        # GitHub API error
+        # GitHub API error (network, timeout, rate limit, etc.)
+        app.logger.error(f"GitHub authentication error: {e}")
         return render_template("error.html",
-                             status=500,
-                             message="GitHub Connection Error",
-                             detail="Could not connect to GitHub. Please try again later."), 500
+                             status=503,
+                             message="GitHub Service Temporarily Unavailable",
+                             detail=f"Could not complete authentication: {str(e)}"), 503
+                             
     except Exception as e:
-        # Unexpected error
+        # Unexpected error - log and show generic message
+        app.logger.error(f"Unexpected authentication error: {e}", exc_info=True)
         return render_template("error.html",
                              status=500,
-                             message="Internal Server Error",
-                             detail="An unexpected error occurred during authentication."), 500
+                             message="Authentication Failed",
+                             detail="An unexpected error occurred during authentication. Please try again."), 500
 
 
 @app.route("/dashboard")
@@ -537,6 +641,9 @@ def run_repo_scan(repo, token, job_id=None):
         # Fallback to basic PDF if executable didn't generate it
         with open(pdf_path, "wb") as pdf_file:
             pdf_file.write(build_pdf_bytes(build_repo_pdf_lines(scan_result)))
+    
+    # Track this scan in statistics
+    track_scan_completion(scan_result)
     
     return scan_result
 
@@ -1357,36 +1464,34 @@ def all_user_repos():
 
 @app.route("/api/session-stats")
 def session_stats():
-    """Get session-based statistics for dashboard"""
+    """
+    Get scan statistics for dashboard (scanned today, high-risk findings).
+    Returns real-time aggregated statistics from all completed scans today.
+    """
     token = session.get("access_token")
     if not token:
         return jsonify({"error": "Unauthorized"}), 401
     
-    session_id = get_session_id()
-    
-    # Count scans completed in this session
-    scanned_today = 0
-    high_risk_findings = 0
-    
-    with SESSION_DATA_LOCK:
-        scan_results = SESSION_SCAN_RESULTS.get(session_id, {})
-        for report in scan_results.values():
-            if report:
-                scanned_today += report.get("scanned_repositories", 0)
-                # Count CRITICAL and HIGH severity findings
-                severity_counts = report.get("severity_counts", {})
-                high_risk_findings += severity_counts.get("CRITICAL", 0) + severity_counts.get("HIGH", 0)
-    
     try:
+        # Get today's statistics
+        stats = get_statistics()
+        
+        # Add total repository count
         total_repositories = len(get_repos(token)) if token else 0
-    except Exception:
-        total_repositories = 0
-    
-    return jsonify({
-        "scanned_today": scanned_today,
-        "high_risk_findings": high_risk_findings,
-        "total_repositories": total_repositories
-    })
+        stats["total_repositories"] = total_repositories
+        
+        return jsonify(stats)
+    except Exception as e:
+        logger.error(f"Failed to get statistics: {e}")
+        # Return defaults instead of failing
+        return jsonify({
+            "scanned_today": 0,
+            "high_risk_findings": 0,
+            "total_findings_today": 0,
+            "total_repositories": 0,
+            "breakdown": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0},
+            "timestamp": datetime.utcnow().isoformat() + "Z"
+        })
 
 
 @app.route("/api/bulk-scan/start", methods=["POST"])

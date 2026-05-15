@@ -24,11 +24,11 @@ services:
     networks:
       - gvd-network
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5000/').read()"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/", "-m", "5"]
       interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
 
   # CLI Scanner Service (builds the executable)
   gvd-cli:
