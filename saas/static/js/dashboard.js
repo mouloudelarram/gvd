@@ -61,6 +61,16 @@ window.GVD.dashboard = {
       });
     }
 
+    // Bulk scan stop button
+    const stopBulkScanBtn = document.getElementById('bulk-scan-stop-btn');
+    if (stopBulkScanBtn) {
+      stopBulkScanBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.stopBulkScan();
+      });
+    }
+
     // Repository detail buttons - direct binding for reliability
     const detailButtons = document.querySelectorAll('.repo-details-btn');
     detailButtons.forEach(button => {
@@ -270,28 +280,35 @@ window.GVD.dashboard = {
    * Create search result item HTML
    */
   createSearchResultItem: function(repo) {
+    const initials = (repo.name || 'R').substring(0, 2).toUpperCase();
+    const visibility = repo.visibility || 'public';
+    const language = repo.language || 'Unknown';
+    const stars = repo.stargazers_count || 0;
+    const fullName = repo.full_name || repo.name;
+    const owner = repo.owner?.login || '';
+    const repoUrl = repo.clone_url || '';
+    
     return `
-      <div class="search-result-item" data-owner="${repo.owner?.login}" data-repo="${repo.name}" data-repo-url="${repo.clone_url}">
-        <div class="search-result-header">
-          <h4>
-            <a href="${repo.html_url || '#'}" target="_blank" rel="noopener noreferrer">
-              ${window.GVD.utils.escapeHtml(repo.full_name || repo.name)}
-            </a>
-          </h4>
-          <span class="badge badge-${repo.visibility}">${repo.visibility}</span>
+      <div class="search-result-item" data-owner="${owner}" data-repo="${repo.name}" data-repo-url="${repoUrl}" data-visibility="${visibility}">
+        <div class="search-result-icon" title="${window.GVD.utils.escapeHtml(fullName)}">
+          ${initials}
         </div>
-        <p class="search-result-description">
-          ${window.GVD.utils.escapeHtml(repo.description || 'No description available')}
-        </p>
-        <div class="search-result-meta">
-          <span>Language: ${window.GVD.utils.escapeHtml(repo.language || 'Unknown')}</span>
-          <span>Stars: ${repo.stargazers_count || 0}</span>
+        <div class="search-result-content">
+          <h4 class="search-result-title">
+            ${window.GVD.utils.escapeHtml(fullName)}
+          </h4>
+          <div class="search-result-meta">
+            <span class="search-result-badge ${visibility}">${visibility.toUpperCase()}</span>
+            <span>${window.GVD.utils.escapeHtml(language)}</span>
+            <span>⭐ ${stars}</span>
+          </div>
         </div>
         <div class="search-result-actions">
-          <button class="btn btn-ghost btn-sm search-details-btn">
-            Details
-          </button>
-          <button class="btn btn-primary btn-sm search-scan-btn">
+          <button class="btn btn-primary btn-sm search-scan-btn" type="button" data-owner="${owner}" data-repo="${repo.name}" data-repo-url="${repoUrl}" title="Scan ${window.GVD.utils.escapeHtml(repo.name)}">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7 1v3M7 10v3M3 7h3M10 7h1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              <circle cx="7" cy="7" r="1" fill="currentColor" />
+            </svg>
             Scan
           </button>
         </div>
@@ -354,7 +371,7 @@ window.GVD.dashboard = {
   showSearchLoading: function() {
     const searchResults = document.getElementById('search-results');
     if (searchResults) {
-      searchResults.innerHTML = '<div class="search-loading">Searching...</div>';
+      searchResults.innerHTML = '<div class="search-results-loading">Searching repositories...</div>';
       searchResults.hidden = false;
     }
   },
@@ -365,7 +382,7 @@ window.GVD.dashboard = {
   showSearchError: function(message) {
     const searchResults = document.getElementById('search-results');
     if (searchResults) {
-      searchResults.innerHTML = `<div class="search-error">${window.GVD.utils.escapeHtml(message)}</div>`;
+      searchResults.innerHTML = `<div class="search-results-empty">❌ ${window.GVD.utils.escapeHtml(message)}</div>`;
       searchResults.hidden = false;
     }
   },
@@ -376,7 +393,7 @@ window.GVD.dashboard = {
   showSearchEmpty: function() {
     const searchResults = document.getElementById('search-results');
     if (searchResults) {
-      searchResults.innerHTML = '<div class="search-empty">No repositories found</div>';
+      searchResults.innerHTML = '<div class="search-results-empty">📭 No repositories found</div>';
       searchResults.hidden = false;
     }
   },
@@ -823,6 +840,12 @@ window.GVD.dashboard = {
     logsPanel.innerHTML = '';
     logsPanel.dataset.lastLogCount = '0';
     
+    // Enable stop button
+    const stopBtn = document.getElementById('bulk-scan-stop-btn');
+    if (stopBtn) {
+      stopBtn.disabled = false;
+    }
+    
     this.addBulkLog('Initializing bulk scan...', 'info');
   },
 
@@ -888,8 +911,58 @@ window.GVD.dashboard = {
   },
 
   /**
-   * Set modal loading state
+   * Stop the bulk scan
    */
+  stopBulkScan: function() {
+    if (!this.bulkScanState || !this.bulkScanState.scanning) {
+      return;
+    }
+
+    try {
+      // Clear polling interval
+      if (this.bulkScanState.pollingInterval) {
+        clearTimeout(this.bulkScanState.pollingInterval);
+        this.bulkScanState.pollingInterval = null;
+      }
+
+      // Mark as stopped
+      this.bulkScanState.scanning = false;
+
+      // Add log entry
+      this.addBulkLog('🛑 Stopping bulk scan...', 'warning');
+
+      // Disable stop button
+      const stopBtn = document.getElementById('bulk-scan-stop-btn');
+      if (stopBtn) {
+        stopBtn.disabled = true;
+      }
+
+      // Call backend to stop the scan if there's a job ID
+      if (this.bulkScanState.jobId) {
+        window.GVD.utils.api.post(`/scan-all/${this.bulkScanState.jobId}/stop`, {})
+          .then(response => {
+            if (response.pid_killed) {
+              this.addBulkLog(`✓ Process terminated (PID: ${response.pid_killed})`, 'success');
+            } else {
+              this.addBulkLog('✓ Stop signal sent - remaining repos will be skipped', 'success');
+            }
+          })
+          .catch(err => {
+            this.addBulkLog(`⚠ Backend error: ${err.message}`, 'warning');
+            console.warn('Error stopping scan:', err);
+          });
+      }
+
+      // Update UI
+      window.GVD.toast.show('Bulk scan stopped - CLI process terminated', 'info');
+
+    } catch (error) {
+      console.error('Error stopping bulk scan:', error);
+      window.GVD.toast.show('Error stopping scan', 'error');
+    }
+  },
+
+  /**
   setModalLoadingState: function(modalId, repoName) {
     const modalTitle = document.getElementById(`${modalId.replace('-modal', '')}-title`);
     const modalMeta = document.getElementById(`${modalId.replace('-modal', '')}-meta`);

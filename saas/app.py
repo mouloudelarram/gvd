@@ -464,20 +464,62 @@ def update_bulk_pending_repositories(job_id, pending_repositories):
 
 
 def terminate_process_tree(process):
+    """Terminate a process and all its children with better error handling."""
     if not process:
         return
+    
     try:
-        if os.name == "nt":
-            subprocess.run(
-                ["taskkill", "/PID", str(process.pid), "/T", "/F"],
-                check=False,
-                capture_output=True,
-                text=True,
-            )
-        else:
-            process.kill()
-    except OSError:
-        pass
+        pid = process.pid
+        if not pid:
+            return
+            
+        if os.name == "nt":  # Windows
+            # Use taskkill with /T (terminate tree) and /F (force)
+            try:
+                result = subprocess.run(
+                    ["taskkill", "/PID", str(pid), "/T", "/F"],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=10,
+                )
+                logger.info(f"taskkill result: {result.returncode}, stdout: {result.stdout}, stderr: {result.stderr}")
+            except Exception as e:
+                logger.error(f"taskkill failed: {e}")
+            
+            # Try multiple times to ensure termination
+            for attempt in range(3):
+                try:
+                    if process.poll() is None:  # Process still running
+                        logger.info(f"Process still running, attempt {attempt + 1} to terminate")
+                        process.terminate()
+                        try:
+                            process.wait(timeout=2)
+                            logger.info("Process terminated successfully")
+                            return
+                        except subprocess.TimeoutExpired:
+                            logger.warning("Terminate timed out, trying kill")
+                            process.kill()
+                            try:
+                                process.wait(timeout=2)
+                                logger.info("Process killed successfully")
+                                return
+                            except:
+                                logger.error("Kill also failed")
+                    else:
+                        logger.info("Process already terminated")
+                        return
+                except Exception as e:
+                    logger.error(f"Error in termination attempt {attempt + 1}: {e}")
+        else:  # Unix/Linux
+            try:
+                process.terminate()
+                process.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+    except Exception as e:
+        logger.error(f"Error in terminate_process_tree: {e}")
 
 
 def build_repo_pdf_lines(scan_result):
@@ -557,11 +599,56 @@ def execute_scan_command(repo_path, scan_output_dir, job_id=None, repo_key=None)
         )
 
     try:
-        stdout, stderr = process.communicate(timeout=300)
-    except subprocess.TimeoutExpired:
-        process.kill()
-        process.communicate()
-        raise
+        # Use communicate with timeout and periodically check if scan should stop
+        stdout_data = []
+        stderr_data = []
+        
+        # Use a shorter timeout in communicate() to allow checking stop status
+        scan_timeout = 300  # 5 minutes total
+        chunk_timeout = 5   # Check every 5 seconds if we should stop
+        elapsed = 0
+        
+        try:
+            while elapsed < scan_timeout:
+                try:
+                    # Check if we should stop scanning
+                    should_stop = False
+                    with BULK_SCAN_JOBS_LOCK:
+                        job = BULK_SCAN_JOBS.get(job_id)
+                        if job and job.get("status") == "stopped":
+                            should_stop = True
+                    
+                    if should_stop:
+                        logger.info(f"Stop requested during scan, terminating process PID {process.pid}")
+                        terminate_process_tree(process)
+                        raise subprocess.CalledProcessError(1, "scan", output="Scan stopped by user", stderr="")
+                    
+                    # Try to wait for process with short timeout
+                    stdout, stderr = process.communicate(timeout=chunk_timeout)
+                    stdout_data.append(stdout or "")
+                    stderr_data.append(stderr or "")
+                    break  # Process completed
+                except subprocess.TimeoutExpired:
+                    elapsed += chunk_timeout
+                    # Continue loop to check stop status again
+                    continue
+            
+            # If we've exceeded the total scan timeout
+            if elapsed >= scan_timeout:
+                logger.warning(f"Scan exceeded timeout for {repo_key}")
+                terminate_process_tree(process)
+                raise subprocess.TimeoutExpired("scan", scan_timeout)
+                
+        except subprocess.TimeoutExpired:
+            # Final attempt to check if stopped
+            with BULK_SCAN_JOBS_LOCK:
+                job = BULK_SCAN_JOBS.get(job_id)
+                if job and job.get("status") == "stopped":
+                    logger.info("Scan stopped by user during timeout")
+                else:
+                    logger.warning("Scan timed out")
+            terminate_process_tree(process)
+            raise
     finally:
         if job_id and repo_key:
             with BULK_SCAN_JOBS_LOCK:
@@ -574,9 +661,9 @@ def execute_scan_command(repo_path, scan_output_dir, job_id=None, repo_key=None)
         if job_id and repo_key and is_repo_skip_requested(job_id, repo_key):
             owner, repo_name = repo_key.split("/", 1)
             raise RepoSkippedError(owner, repo_name)
-        raise subprocess.CalledProcessError(process.returncode, command, output=stdout, stderr=stderr)
+        raise subprocess.CalledProcessError(process.returncode, command, output="".join(stdout_data), stderr="".join(stderr_data))
 
-    return (stdout or "") + ("\n" + stderr if stderr else "")
+    return ("".join(stdout_data) or "") + ("\n" + "".join(stderr_data) if "".join(stderr_data) else "")
 
 
 def run_repo_scan(repo, token, job_id=None):
@@ -827,6 +914,17 @@ def run_bulk_scan_job(job_id, repos, token, visibility, session_id=None):
         update_bulk_pending_repositories(job_id, pending_repositories)
 
         for index, repo in enumerate(repos, start=1):
+            # Check if scan should be stopped (check status flag)
+            should_stop = False
+            with BULK_SCAN_JOBS_LOCK:
+                job = BULK_SCAN_JOBS.get(job_id)
+                if job and job.get("status") != "running":
+                    should_stop = True
+            
+            if should_stop:
+                append_bulk_scan_log(job_id, f"[{index}/{len(repos)}] 🛑 Scan stopped by user, skipping remaining repositories.")
+                break
+            
             owner = ((repo.get("owner") or {}).get("login") or "").strip()
             repo_name = (repo.get("name") or "").strip()
             label = f"{owner}/{repo_name}"
@@ -921,6 +1019,19 @@ def run_bulk_scan_job(job_id, repos, token, visibility, session_id=None):
                 )
             finally:
                 update_bulk_scan_job(job_id, current_repo=None, current_repo_key=None)
+                
+                # Check if we should stop after this repo
+                with BULK_SCAN_JOBS_LOCK:
+                    job = BULK_SCAN_JOBS.get(job_id)
+                    if job and job.get("status") != "running":
+                        append_bulk_scan_log(job_id, f"🛑 Stop detected after {label}, will exit loop after this iteration.")
+                        # Force break on next iteration by not continuing the loop naturally
+
+        # Check one final time if we should exit due to stop request
+        with BULK_SCAN_JOBS_LOCK:
+            job = BULK_SCAN_JOBS.get(job_id)
+            if job and job.get("status") != "running":
+                append_bulk_scan_log(job_id, "🛑 Bulk scan stopped - all remaining repositories skipped.")
 
         report = build_aggregate_summary(successes, failures, visibility)
         report["skipped_repositories"] = skipped
@@ -1198,6 +1309,54 @@ def scan_all_skip(job_id):
         terminate_process_tree(process_to_kill)
 
     return jsonify({"status": "skip_requested", "repo_key": repo_key})
+
+
+@app.route("/scan-all/<job_id>/stop", methods=["POST"])
+def scan_all_stop(job_id):
+    """Stop a running bulk scan job and terminate any active CLI process."""
+    token = session.get("access_token")
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    process_to_kill = None
+    current_repo = None
+    current_pid = None
+    
+    with BULK_SCAN_JOBS_LOCK:
+        job = BULK_SCAN_JOBS.get(job_id)
+        if not job:
+            return jsonify({"error": "Bulk scan job not found."}), 404
+        
+        if job.get("status") != "running":
+            return jsonify({"error": "Bulk scan job is not running."}), 400
+        
+        # Mark job as stopped
+        job["status"] = "stopped"
+        job["updated_at"] = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+        
+        # Get process to kill and current repo info
+        process_to_kill = job.get("current_process")
+        current_repo = job.get("current_repo") or "unknown"
+        if process_to_kill and hasattr(process_to_kill, 'pid'):
+            current_pid = process_to_kill.pid
+
+    # Log the stop attempt
+    append_bulk_scan_log(job_id, f"🛑 Stop signal received - Current repo: {current_repo}")
+    
+    # Kill the process if it exists
+    if process_to_kill:
+        try:
+            append_bulk_scan_log(job_id, f"Terminating CLI process (PID: {current_pid})...")
+            terminate_process_tree(process_to_kill)
+            append_bulk_scan_log(job_id, "✓ CLI process terminated successfully")
+        except Exception as e:
+            append_bulk_scan_log(job_id, f"⚠ Error terminating process: {str(e)}")
+    else:
+        append_bulk_scan_log(job_id, "No active CLI process to terminate")
+    
+    append_bulk_scan_log(job_id, "⛔ Bulk scan stopped by user - remaining repositories will be skipped")
+
+    return jsonify({"status": "stopped", "job_id": job_id, "pid_killed": current_pid})
 
 
 @app.route("/download-report/<report_id>.<file_format>")

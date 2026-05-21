@@ -137,7 +137,34 @@ def ensure_repo_cloned(repo, token, process_callback=None):
         process_callback(process)
     
     try:
-        stdout, stderr = process.communicate(timeout=300)
+        # Use polling to allow checking if process should be terminated
+        import time
+        poll_timeout = 300  # 5 minutes total
+        chunk_timeout = 2   # Check every 2 seconds
+        elapsed = 0
+        
+        while elapsed < poll_timeout:
+            try:
+                stdout, stderr = process.communicate(timeout=chunk_timeout)
+                # Process completed successfully
+                break
+            except subprocess.TimeoutExpired:
+                # Check if process is still running
+                if process.poll() is not None:
+                    # Process has finished
+                    stdout, stderr = process.communicate()
+                    break
+                elapsed += chunk_timeout
+                # Continue polling - this allows other threads to kill the process if needed
+                continue
+        else:
+            # Timeout occurred
+            process.kill()
+            process.communicate()
+            if target_dir.exists():
+                shutil.rmtree(target_dir)
+            raise RuntimeError(f"Clone operation timed out for {safe_username}/{safe_name}")
+            
     except subprocess.TimeoutExpired:
         process.kill()
         process.communicate()
