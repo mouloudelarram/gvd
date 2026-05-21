@@ -133,6 +133,67 @@ def add_session_notification(notification_type, title, message, data=None):
     
     return notification
 
+# ============================================================================
+# STATISTICS TRACKING (Production-Grade)
+# ============================================================================
+
+# Scan statistics tracked per day
+SCAN_STATISTICS = {}  # {date_str: {"total_scans": int, "findings": {severity: count}}}
+STATISTICS_LOCK = threading.Lock()
+
+
+def get_today_date():
+    """Get today's date in UTC as YYYY-MM-DD string."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def track_scan_completion(scan_result):
+    """Track completed scan in statistics."""
+    if not scan_result:
+        return
+    
+    today = get_today_date()
+    severity_counts = scan_result.get("severity_counts", {})
+    
+    with STATISTICS_LOCK:
+        if today not in SCAN_STATISTICS:
+            SCAN_STATISTICS[today] = {
+                "total_scans": 0,
+                "total_findings": 0,
+                "findings": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
+            }
+        
+        stats = SCAN_STATISTICS[today]
+        stats["total_scans"] += 1
+        stats["total_findings"] += scan_result.get("total_findings", 0)
+        
+        for severity in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
+            stats["findings"][severity] += severity_counts.get(severity, 0)
+
+
+def get_statistics():
+    """Get statistics for today and cumulative high-risk findings."""
+    today = get_today_date()
+    
+    with STATISTICS_LOCK:
+        today_stats = SCAN_STATISTICS.get(today, {
+            "total_scans": 0,
+            "total_findings": 0,
+            "findings": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
+        })
+        
+        # Calculate high-risk findings (CRITICAL + HIGH)
+        high_risk_count = today_stats["findings"].get("CRITICAL", 0) + today_stats["findings"].get("HIGH", 0)
+        
+        return {
+            "scanned_today": today_stats["total_scans"],
+            "high_risk_findings": high_risk_count,
+            "total_findings_today": today_stats["total_findings"],
+            "breakdown": today_stats["findings"],
+            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        }
+
+
 def timeago_filter(date_string):
     """Convert a date string to a relative time format."""
     if not date_string:
