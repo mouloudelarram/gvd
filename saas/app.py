@@ -7,7 +7,7 @@ import subprocess
 import requests
 import platform
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from textwrap import wrap
 
@@ -62,11 +62,16 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Security configuration for session cookies
+# In development (localhost), use HTTP; in production, require HTTPS
+is_production = os.environ.get("FLASK_ENV") == "production" or os.environ.get("ENVIRONMENT") == "production"
+is_localhost = os.environ.get("LOCALHOST_DEV", "false").lower() == "true"
+
 app.config.update(
-    SESSION_COOKIE_SECURE=True,  # Only send over HTTPS
+    SESSION_COOKIE_SECURE=is_production and not is_localhost,  # Only HTTPS in production
     SESSION_COOKIE_HTTPONLY=True,  # No JavaScript access
     SESSION_COOKIE_SAMESITE='Lax',  # CSRF protection
     SESSION_COOKIE_NAME='gvd_session',
+    SESSION_COOKIE_DOMAIN=None,  # Allow localhost
     PERMANENT_SESSION_LIFETIME=timedelta(hours=24),
     MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16MB max request size
 )
@@ -120,91 +125,8 @@ def add_session_notification(notification_type, title, message, data=None):
             "message": message,
             "data": data or {},
             "read": False,
-            "created_at": datetime.utcnow().isoformat() + "Z",
-            "timestamp": int(datetime.utcnow().timestamp() * 1000)
-        }
-        
-        SESSION_NOTIFICATIONS[session_id].append(notification)
-    
-    return notification
-
-# ============================================================================
-# STATISTICS TRACKING (Production-Grade)
-# ============================================================================
-
-# Scan statistics tracked per day
-SCAN_STATISTICS = {}  # {date_str: {"total_scans": int, "findings": {severity: count}}}
-STATISTICS_LOCK = threading.Lock()
-
-
-def get_today_date():
-    """Get today's date in UTC as YYYY-MM-DD string."""
-    return datetime.utcnow().strftime("%Y-%m-%d")
-
-
-def track_scan_completion(scan_result):
-    """Track completed scan in statistics."""
-    if not scan_result:
-        return
-    
-    today = get_today_date()
-    severity_counts = scan_result.get("severity_counts", {})
-    
-    with STATISTICS_LOCK:
-        if today not in SCAN_STATISTICS:
-            SCAN_STATISTICS[today] = {
-                "total_scans": 0,
-                "total_findings": 0,
-                "findings": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
-            }
-        
-        stats = SCAN_STATISTICS[today]
-        stats["total_scans"] += 1
-        stats["total_findings"] += scan_result.get("total_findings", 0)
-        
-        for severity in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
-            stats["findings"][severity] += severity_counts.get(severity, 0)
-
-
-def get_statistics():
-    """Get statistics for today and cumulative high-risk findings."""
-    today = get_today_date()
-    
-    with STATISTICS_LOCK:
-        today_stats = SCAN_STATISTICS.get(today, {
-            "total_scans": 0,
-            "total_findings": 0,
-            "findings": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
-        })
-        
-        # Calculate high-risk findings (CRITICAL + HIGH)
-        high_risk_count = today_stats["findings"].get("CRITICAL", 0) + today_stats["findings"].get("HIGH", 0)
-        
-        return {
-            "scanned_today": today_stats["total_scans"],
-            "high_risk_findings": high_risk_count,
-            "total_findings_today": today_stats["total_findings"],
-            "breakdown": today_stats["findings"],
-            "timestamp": datetime.utcnow().isoformat() + "Z"
-        }
-
-
-def add_session_notification(notification_type, title, message, data=None):
-    """Add notification to current session"""
-    session_id = get_session_id()
-    with SESSION_DATA_LOCK:
-        if session_id not in SESSION_NOTIFICATIONS:
-            SESSION_NOTIFICATIONS[session_id] = []
-        
-        notification = {
-            "id": uuid.uuid4().hex,
-            "type": notification_type,
-            "title": title,
-            "message": message,
-            "data": data or {},
-            "read": False,
-            "created_at": datetime.utcnow().isoformat() + "Z",
-            "timestamp": int(datetime.utcnow().timestamp() * 1000)
+            "created_at": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+            "timestamp": int(datetime.now(timezone.utc).timestamp() * 1000)
         }
         
         SESSION_NOTIFICATIONS[session_id].append(notification)
@@ -224,9 +146,12 @@ def timeago_filter(date_string):
             date_obj = date_string
         
         # Convert to UTC for comparison
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         if date_obj.tzinfo:
-            date_obj = date_obj.astimezone().replace(tzinfo=None)
+            date_obj = date_obj.astimezone(timezone.utc)
+        else:
+            # If naive, assume UTC
+            date_obj = date_obj.replace(tzinfo=timezone.utc)
         
         delta = now - date_obj
         seconds = delta.total_seconds()
@@ -459,9 +384,9 @@ def append_bulk_scan_log(job_id, message):
         if not job:
             return
         logs = job.setdefault("logs", [])
-        timestamp = datetime.utcnow().strftime("%H:%M:%S")
+        timestamp = datetime.now(timezone.utc).strftime("%H:%M:%S")
         logs.append(f"[{timestamp}] {message}")
-        job["updated_at"] = datetime.utcnow().isoformat() + "Z"
+        job["updated_at"] = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
 
 
 def is_repo_skip_requested(job_id, repo_key):
@@ -623,7 +548,7 @@ def run_repo_scan(repo, token, job_id=None):
                 if job and job.get("current_repo_key") == repo_key:
                     job["current_process"] = None
 
-    timestamp = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
     scan_output_dir = SCAN_REPORTS_DIR / Path(owner).name / Path(repo_name).name / timestamp
     scan_output_dir.mkdir(parents=True, exist_ok=True)
     command_output = execute_scan_command(repo_path, scan_output_dir, job_id=job_id, repo_key=repo_key)
@@ -667,7 +592,7 @@ def build_aggregate_summary(scan_results, failures, visibility="both"):
                 totals[severity] += count
 
     return {
-        "generated_at": datetime.utcnow().isoformat() + "Z",
+        "generated_at": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
         "visibility": visibility,
         "total_repositories": len(scan_results) + len(failures),
         "scanned_repositories": len(scan_results),
@@ -803,7 +728,7 @@ def build_bulk_pdf_lines(report):
 
 
 def save_bulk_report(report):
-    report_id = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+    report_id = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
     output_dir = SCAN_REPORTS_DIR / "bulk" / report_id
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -953,7 +878,7 @@ def run_bulk_scan_job(job_id, repos, token, visibility, session_id=None):
             pending_repositories=[],
             scanned_repositories=report.get("scanned_repositories", 0),
             failed_repositories=report.get("failed_repositories", 0),
-            updated_at=datetime.utcnow().isoformat() + "Z",
+            updated_at=datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
         )
         
         # NEW: Create completion notification
@@ -979,7 +904,7 @@ def run_bulk_scan_job(job_id, repos, token, visibility, session_id=None):
             status="failed",
             error=str(exc),
             pending_repositories=[],
-            updated_at=datetime.utcnow().isoformat() + "Z",
+            updated_at=datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
         )
         
         # NEW: Create failure notification
@@ -1127,8 +1052,8 @@ def scan_all():
             "current_process": None,
             "skip_requests": set(),
             "session_id": session_id,  # NEW: Store session ID
-            "created_at": datetime.utcnow().isoformat() + "Z",
-            "updated_at": datetime.utcnow().isoformat() + "Z",
+            "created_at": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+            "updated_at": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
         }
 
     worker = threading.Thread(
@@ -1499,7 +1424,7 @@ def session_stats():
             "total_findings_today": 0,
             "total_repositories": 0,
             "breakdown": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0},
-            "timestamp": datetime.utcnow().isoformat() + "Z"
+            "timestamp": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
         })
 
 

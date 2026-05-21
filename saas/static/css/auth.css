@@ -192,8 +192,8 @@ html, body {
 }
 
 .auth-logo {
-  width: 60px;
-  height: 60px;
+  width: 200px;
+  height: 200px;
   object-fit: contain;
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.08));
   animation: float 3s ease-in-out infinite;
@@ -458,7 +458,7 @@ html, body {
     padding: var(--space-3) var(--space-4);
     min-height: 48px;
   }
-}
+
 
 /* Loading State */
 .auth-loading .btn-github {

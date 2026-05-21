@@ -10,6 +10,7 @@ def get_github_auth_url():
     # Generate a random state token for CSRF protection
     state = secrets.token_urlsafe(32)
     session['oauth_state'] = state
+    session.modified = True  # Explicitly mark session as modified to ensure it's saved
     
     redirect_uri = os.environ.get("OAUTH_REDIRECT_URI", "http://localhost:5000/callback")
     
@@ -27,11 +28,24 @@ def get_github_auth_url():
 def validate_oauth_state(request_state):
     """Validate OAuth state parameter to prevent CSRF attacks."""
     stored_state = session.get('oauth_state')
-    if not stored_state or not request_state:
+    
+    # Debug logging for troubleshooting
+    if not request_state or not stored_state:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"OAuth state validation failed: request_state={bool(request_state)}, stored_state={bool(stored_state)}")
         return False
+    
     # Use constant-time comparison to prevent timing attacks
     import hmac
-    return hmac.compare_digest(stored_state, request_state)
+    match = hmac.compare_digest(stored_state, request_state)
+    
+    if not match:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"OAuth state mismatch: stored={len(stored_state)} chars, request={len(request_state)} chars")
+    
+    return match
 
 
 def get_github_token():
