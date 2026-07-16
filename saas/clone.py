@@ -3,6 +3,8 @@ import subprocess
 from pathlib import Path
 import re
 
+from network_config import git_environment
+
 
 BASE_DIR = Path(__file__).resolve().parent
 REPOS_DIR = BASE_DIR / "repos"
@@ -79,6 +81,7 @@ def clone_repos(repos, token):
                 capture_output=True,
                 text=True,
                 timeout=300,
+                env=git_environment(),
             )
         except subprocess.TimeoutExpired:
             print(f"[{index}/{total}] Timeout cloning {safe_username}/{safe_name}")
@@ -131,6 +134,7 @@ def ensure_repo_cloned(repo, token, process_callback=None):
         stderr=subprocess.PIPE,
         text=True,
         creationflags=WINDOWS_CREATION_FLAGS,
+        env=git_environment(),
     )
     
     if process_callback:

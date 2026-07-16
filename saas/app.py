@@ -18,6 +18,7 @@ from auth import get_github_auth_url, get_github_token, get_github_user, validat
 from clone import clone_repos, ensure_repo_cloned
 from github import get_repo_details, get_repos, search_repos
 from config import generate_csrf_token, setup_error_handlers, require_login
+from network_config import configure_github_network
 
 
 def load_env():
@@ -44,6 +45,7 @@ def load_env():
 
 
 load_env()
+configure_github_network()
 
 # Validate required environment variables
 required_env_vars = ["GITHUB_CLIENT_ID", "GITHUB_CLIENT_SECRET", "FLASK_SECRET_KEY"]

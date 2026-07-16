@@ -131,6 +131,6 @@ gvd-report/
 *.exe
 
 #saas 
-/saas/.env/
+/saas/.env
 /saas/repos/
 /saas/scan_reports/
