@@ -1,0 +1,180 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install ruff==0.9.2
+      - name: Ruff check
+        run: ruff check .
+
+  test:
+    name: Tests (${{ matrix.package }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [saas, cli]
+    # The SaaS app validates required env vars at import time; provide dummies.
+    env:
+      GITHUB_CLIENT_ID: test_client_id
+      GITHUB_CLIENT_SECRET: test_client_secret
+      FLASK_SECRET_KEY: test_secret_key_for_ci_only_not_a_real_secret
+      OAUTH_REDIRECT_URI: http://localhost:5000/callback
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install dependencies
+        working-directory: ${{ matrix.package }}
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
+          if [ -f pyproject.toml ]; then pip install -e . || true; fi
+          pip install pytest pytest-cov
+      - name: Run tests
+        working-directory: ${{ matrix.package }}
+        run: pytest -q --cov=. --cov-report=xml
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.package }}
+          path: ${{ matrix.package }}/coverage.xml
+          if-no-files-found: ignore
+
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependency-audit:
+    name: Dependency audit (pip-audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install pip-audit==2.7.3
+      - name: Audit SaaS runtime dependencies
+        run: pip-audit -r saas/requirements.txt --strict
+      # CLI declares deps in pyproject; audit the installed environment.
+      - name: Audit CLI dependencies
+        working-directory: cli
+        run: |
+          pip install -e .
+          pip-audit --strict
+
+  sbom:
+    name: SBOM (CycloneDX)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - run: pip install cyclonedx-bom==5.1.1
+      - name: Generate SBOM for SaaS
+        run: cyclonedx-py requirements saas/requirements.txt -o sbom-saas.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom-*.json
+
+  frontend-test:
+    name: Frontend a11y + journeys (Playwright + axe)
+    runs-on: ubuntu-latest
+    # Closes blocker B5: browser/axe tests on a Node-enabled runner.
+    env:
+      GITHUB_CLIENT_ID: test_client_id
+      GITHUB_CLIENT_SECRET: test_client_secret
+      FLASK_SECRET_KEY: test_secret_key_for_ci_only_not_a_real_secret
+      OAUTH_REDIRECT_URI: http://127.0.0.1:5000/callback
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+      - name: Install SaaS runtime dependencies
+        run: pip install -r saas/requirements.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install frontend test dependencies
+        working-directory: saas/frontend-tests
+        run: npm ci
+      - name: Install Playwright browser
+        working-directory: saas/frontend-tests
+        run: npx playwright install --with-deps chromium
+      - name: Run Playwright accessibility + journey tests
+        working-directory: saas/frontend-tests
+        # Playwright's webServer launches `python app.py` (cwd: saas).
+        run: npm test
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: saas/frontend-tests/playwright-report
+          if-no-files-found: ignore
+
+  compose-smoke:
+    name: Docker Compose smoke test
+    runs-on: ubuntu-latest
+    # Closes blocker B1: exercises the container gates on a Docker-enabled runner.
+    env:
+      GITHUB_CLIENT_ID: test_client_id
+      GITHUB_CLIENT_SECRET: test_client_secret
+      FLASK_SECRET_KEY: test_secret_key_for_ci_only_not_a_real_secret
+    steps:
+      - uses: actions/checkout@v4
+      # Compose interpolates ${GITHUB_CLIENT_ID} etc. from this job's shell env
+      # (see the `env:` block above); no gitignored secret file is required.
+      - name: Build images
+        run: docker compose build
+      - name: Start stack
+        run: docker compose up -d
+      - name: Wait for health
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:5000/health >/dev/null 2>&1; then
+              echo "Service healthy"; exit 0
+            fi
+            echo "Waiting for service... ($i)"; sleep 5
+          done
+          echo "Service did not become healthy"; docker compose logs; exit 1
+      - name: Tear down
+        if: always()
+        run: docker compose down -v
+
+
+

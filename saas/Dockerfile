@@ -30,9 +30,9 @@ ENV PYTHONUNBUFFERED=1
 # Expose port
 EXPOSE 5000
 
-# Health check
+# Health check (unauthenticated, no scanner dependency)
 HEALTHCHECK --interval=30s --timeout=15s --start-period=60s --retries=5 \
-    CMD curl -f http://localhost:5000/ -m 5 || exit 1
+    CMD curl -f http://localhost:5000/health -m 5 || exit 1
 
 # Run the application with gunicorn for production
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "2", "--timeout", "300", "--access-logfile", "-", "--error-logfile", "-", "app:app"]

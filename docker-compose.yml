@@ -1,4 +1,9 @@
-version: '3.8'
+# GVD development stack.
+# Quick start on a clean checkout:
+#   1) cp .env.example .env   (then edit the values)
+#   2) docker compose up --build
+# Compose auto-loads the root .env for the ${VAR} interpolation below, so no
+# gitignored file needs to exist for the compose file itself to be valid.
 
 services:
   # SaaS Web Application
@@ -13,36 +18,52 @@ services:
       - FLASK_ENV=production
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
-    env_file:
-      - ./saas/.env
+      # Injected from the root .env (or the shell) — never baked into the image:
+      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:?set GITHUB_CLIENT_ID in .env}
+      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:?set GITHUB_CLIENT_SECRET in .env}
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY:?set FLASK_SECRET_KEY in .env}
+      - OAUTH_REDIRECT_URI=${OAUTH_REDIRECT_URI:-http://localhost:5000/callback}
+      - GITHUB_FOLLOW_WINDOWS_PAC=${GITHUB_FOLLOW_WINDOWS_PAC:-false}
+      # Durable state: server-side sessions in Redis; SQLite by default for the DB.
+      - SESSION_TYPE=redis
+      - REDIS_URL=redis://gvd-redis:6379/0
     volumes:
-      - ./saas/scan_reports:/app/scan_reports
-      - ./saas/repos:/app/repos
+      - gvd_scan_reports:/app/scan_reports
+      - gvd_repos:/app/repos
+      - gvd_data:/app/data
     depends_on:
-      - gvd-cli
+      gvd-redis:
+        condition: service_healthy
     restart: unless-stopped
     networks:
       - gvd-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/", "-m", "5"]
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health", "-m", "5"]
       interval: 30s
       timeout: 15s
       retries: 5
       start_period: 60s
 
-  # CLI Scanner Service (builds the executable)
-  gvd-cli:
-    build:
-      context: ./cli
-      dockerfile: Dockerfile
-    container_name: gvd-cli
+  # Redis: server-side session store (F-03) and future job queue (F-02).
+  gvd-redis:
+    image: redis:7-alpine
+    container_name: gvd-redis
+    command: ["redis-server", "--save", "60", "1", "--appendonly", "no"]
     volumes:
-      - gvd_reports:/app/reports
-    environment:
-      - PYTHONPATH=/app
+      - gvd_redis:/data
     networks:
       - gvd-network
-    entrypoint: echo "CLI service ready"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # NOTE: The scanner is not yet runnable from the web container (the CLI is not
+  # bundled into the SaaS image). This is tracked as F-19 and will be resolved by
+  # packaging the scanner as an importable library invoked in-process by a worker.
+  # A previous decorative "gvd-cli" service (which only echoed and exited) was
+  # removed to keep this stack honest and minimal.
 
   # Optional: Nginx reverse proxy for production
   # Uncomment to enable
@@ -61,7 +82,13 @@ services:
   #     - gvd-network
 
 volumes:
-  gvd_reports:
+  gvd_scan_reports:
+    driver: local
+  gvd_repos:
+    driver: local
+  gvd_data:
+    driver: local
+  gvd_redis:
     driver: local
 
 networks:

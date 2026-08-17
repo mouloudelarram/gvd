@@ -17,8 +17,12 @@ from markupsafe import escape
 from auth import get_github_auth_url, get_github_token, get_github_user, validate_oauth_state
 from clone import clone_repos, ensure_repo_cloned
 from github import get_repo_details, get_repos, search_repos
-from config import generate_csrf_token, setup_error_handlers, require_login
+from config import generate_csrf_token, setup_error_handlers, require_login, validate_csrf
 from network_config import configure_github_network
+from session_config import configure_server_side_sessions, rotate_session
+from api_common import api_error, validate_scan_request, build_openapi_spec
+import jobs_repo
+import observability
 
 
 def load_env():
@@ -56,11 +60,25 @@ if missing_vars:
 app = Flask(__name__)
 app.secret_key = os.environ["FLASK_SECRET_KEY"]
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Configure logging: structured JSON in production, human-readable in dev,
+# with automatic credential redaction (F-16).
+observability.configure_logging()
+
+
+class _CorrelationIdFilter(logging.Filter):
+    """Attach the current request's correlation id to every log record."""
+
+    def filter(self, record):  # noqa: A003 - logging API name
+        from flask import g, has_request_context
+
+        if has_request_context():
+            cid = getattr(g, "correlation_id", None)
+            if cid:
+                record.correlation_id = cid
+        return True
+
+
+logging.getLogger().addFilter(_CorrelationIdFilter())
 logger = logging.getLogger(__name__)
 
 # Security configuration for session cookies
@@ -78,14 +96,48 @@ app.config.update(
     MAX_CONTENT_LENGTH=16 * 1024 * 1024,  # 16MB max request size
 )
 
+# Server-side sessions: the GitHub token is stored on the server, never in a
+# cookie (F-03). The browser only holds an opaque, signed session id.
+configure_server_side_sessions(app)
+
 # Setup error handlers
 setup_error_handlers(app)
 
 # Register CSRF token generation for all templates
 @app.before_request
 def before_request():
-    """Generate CSRF token for forms before each request."""
+    """Assign a correlation id, ensure a CSRF token, then enforce CSRF."""
+    from flask import g
+    import time as _time
+    g.correlation_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex
+    g.request_start = _time.perf_counter()
     generate_csrf_token()
+    validate_csrf()
+
+
+@app.after_request
+def add_correlation_header(response):
+    """Echo the correlation id and record request metrics (F-16)."""
+    from flask import g
+    import time as _time
+    cid = getattr(g, "correlation_id", None)
+    if cid:
+        response.headers["X-Request-ID"] = cid
+    start = getattr(g, "request_start", None)
+    if start is not None:
+        duration = _time.perf_counter() - start
+        # Use the matched route rule (low cardinality) instead of the raw path.
+        endpoint = request.url_rule.rule if request.url_rule else "unmatched"
+        observability.observe_http_request(
+            request.method, endpoint, response.status_code, duration
+        )
+    return response
+
+
+@app.context_processor
+def inject_csrf_token():
+    """Make the CSRF token available to every template (e.g. base.html meta tag)."""
+    return {"csrf_token": session.get("_csrf_token", "")}
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -136,64 +188,15 @@ def add_session_notification(notification_type, title, message, data=None):
     return notification
 
 # ============================================================================
-# STATISTICS TRACKING (Production-Grade)
+# STATISTICS TRACKING (durable, per-user) — see db.py / stats_repo.py (F-11)
 # ============================================================================
 
-# Scan statistics tracked per day
-SCAN_STATISTICS = {}  # {date_str: {"total_scans": int, "findings": {severity: count}}}
-STATISTICS_LOCK = threading.Lock()
+from stats_repo import get_today_stats, record_scan_event
 
 
-def get_today_date():
-    """Get today's date in UTC as YYYY-MM-DD string."""
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
-
-
-def track_scan_completion(scan_result):
-    """Track completed scan in statistics."""
-    if not scan_result:
-        return
-    
-    today = get_today_date()
-    severity_counts = scan_result.get("severity_counts", {})
-    
-    with STATISTICS_LOCK:
-        if today not in SCAN_STATISTICS:
-            SCAN_STATISTICS[today] = {
-                "total_scans": 0,
-                "total_findings": 0,
-                "findings": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
-            }
-        
-        stats = SCAN_STATISTICS[today]
-        stats["total_scans"] += 1
-        stats["total_findings"] += scan_result.get("total_findings", 0)
-        
-        for severity in ["CRITICAL", "HIGH", "MEDIUM", "LOW"]:
-            stats["findings"][severity] += severity_counts.get(severity, 0)
-
-
-def get_statistics():
-    """Get statistics for today and cumulative high-risk findings."""
-    today = get_today_date()
-    
-    with STATISTICS_LOCK:
-        today_stats = SCAN_STATISTICS.get(today, {
-            "total_scans": 0,
-            "total_findings": 0,
-            "findings": {"CRITICAL": 0, "HIGH": 0, "MEDIUM": 0, "LOW": 0}
-        })
-        
-        # Calculate high-risk findings (CRITICAL + HIGH)
-        high_risk_count = today_stats["findings"].get("CRITICAL", 0) + today_stats["findings"].get("HIGH", 0)
-        
-        return {
-            "scanned_today": today_stats["total_scans"],
-            "high_risk_findings": high_risk_count,
-            "total_findings_today": today_stats["total_findings"],
-            "breakdown": today_stats["findings"],
-            "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-        }
+def get_statistics(user_login=""):
+    """Return today's aggregated statistics for a single user (durable store)."""
+    return get_today_stats(user_login)
 
 
 def timeago_filter(date_string):
@@ -261,6 +264,9 @@ def get_gvd_executable():
     return exe_path if exe_path.exists() else cli_script
 
 CLI_EXE = get_gvd_executable()
+# Scanner execution mode: 'inprocess' (default, portable, container-safe — F-19)
+# runs the scan in this process via scanner_lib; 'subprocess' shells out to the CLI.
+SCANNER_MODE = os.environ.get("SCANNER_MODE", "inprocess").strip().lower()
 SCAN_REPORTS_DIR = BASE_DIR / "scan_reports"
 BULK_SCAN_JOBS = {}
 BULK_SCAN_JOBS_LOCK = threading.Lock()
@@ -278,6 +284,77 @@ def build_repo_key(owner, repo_name):
     return f"{Path(owner).name}/{Path(repo_name).name}"
 
 
+# ============================================================================
+# PER-RESOURCE AUTHORIZATION (anti-IDOR) — see docs F-06
+# ----------------------------------------------------------------------------
+# Reports may contain secrets discovered in a repository, so a report must only
+# be readable by the user who initiated the scan. Until the durable persistence
+# layer lands, ownership is recorded as a small restart-safe marker written next
+# to the report artifacts, and enforced on every download.
+# ============================================================================
+
+def current_user_login():
+    """Return the authenticated user's GitHub login, or '' if unknown."""
+    user = session.get("user") or {}
+    return (user.get("login") or "").strip()
+
+
+def write_scan_owner(scan_output_dir, scanned_by):
+    """Persist which user initiated a scan, next to its report artifacts."""
+    try:
+        meta_path = Path(scan_output_dir) / "meta.json"
+        with open(meta_path, "w", encoding="utf-8") as meta_file:
+            json.dump({"scanned_by": (scanned_by or "").strip()}, meta_file)
+    except OSError as exc:
+        logger.warning(f"Could not write scan ownership marker: {exc}")
+
+
+def read_scan_owner(scan_dir):
+    """Return the login that initiated the scan in ``scan_dir`` (or '')."""
+    meta_path = Path(scan_dir) / "meta.json"
+    if not meta_path.exists():
+        return ""
+    try:
+        with open(meta_path, encoding="utf-8") as meta_file:
+            return (json.load(meta_file).get("scanned_by") or "").strip()
+    except (OSError, ValueError):
+        return ""
+
+
+def is_authorized_for_scan(scan_dir, login):
+    """Owner-only access: the marker must exist and match the given login."""
+    owner = read_scan_owner(scan_dir)
+    return bool(owner) and owner == (login or "").strip()
+
+
+def is_authorized_for_bulk_report(report_json_path, login):
+    """Owner-only access for bulk reports (owner recorded inside the JSON)."""
+    path = Path(report_json_path)
+    if not path.exists():
+        return False
+    try:
+        with open(path, encoding="utf-8") as report_file:
+            owner = (json.load(report_file).get("owner_login") or "").strip()
+    except (OSError, ValueError):
+        return False
+    return bool(owner) and owner == (login or "").strip()
+
+
+def enforce_job_owner(job_id):
+    """Abort 403 if a durable job exists and is owned by another user (F-06).
+
+    Best-effort: if the durable record is missing (e.g. DB write failed), fall
+    back to the existing behaviour rather than hard-blocking control of a live job.
+    """
+    try:
+        job = jobs_repo.get_job(Path(job_id).name)
+    except Exception:  # pragma: no cover - defensive
+        return
+    if job and job.get("owner_login") != current_user_login():
+        app.logger.warning("Denied cross-user job control for %s", job_id)
+        abort(403)
+
+
 @app.route("/health")
 def health():
     """Health check endpoint for Docker/Kubernetes healthchecks.
@@ -285,6 +362,38 @@ def health():
     Returns 200 OK immediately without requiring authentication.
     """
     return jsonify({"status": "healthy"}), 200
+
+
+@app.route("/livez")
+def livez():
+    """Liveness probe: the process is up and serving (no dependencies checked)."""
+    return jsonify({"status": "alive"}), 200
+
+
+@app.route("/readyz")
+def readyz():
+    """Readiness probe: returns 503 unless the database is reachable."""
+    from db import check_db_ready
+
+    if check_db_ready():
+        return jsonify({"status": "ready"}), 200
+    return jsonify({"status": "not_ready", "reason": "database_unavailable"}), 503
+
+
+@app.route("/metrics")
+def metrics():
+    """Prometheus metrics exposition (F-16).
+
+    Reflects the queue depth on scrape so the gauge stays current, then renders
+    the shared registry in the Prometheus text format.
+    """
+    try:
+        observability.set_queue_depth(jobs_repo.count_queued_jobs())
+    except Exception:  # pragma: no cover - metrics must never break scraping
+        pass
+    from flask import Response
+
+    return Response(observability.render_metrics(), mimetype="text/plain; version=0.0.4")
 
 
 @app.route("/")
@@ -305,6 +414,29 @@ def callback():
     Handle GitHub OAuth callback.
     Validates CSRF state, exchanges code for token, fetches user profile.
     """
+    # Handle the case where GitHub redirects back with an error (e.g. the user
+    # declined the authorization on the consent screen). GitHub sends
+    # ?error=access_denied&error_description=... and no code, so surface a
+    # friendly, journey-specific message instead of a generic "missing code".
+    oauth_error = request.args.get("error")
+    if oauth_error:
+        app.logger.info(f"OAuth authorization not granted: {oauth_error}")
+        if oauth_error == "access_denied":
+            message = "Authorization Cancelled"
+            detail = (
+                "You did not authorize GVD to access your GitHub account. "
+                "Sign in again and approve the requested permissions to continue."
+            )
+        else:
+            message = "Authentication Error"
+            detail = (
+                "GitHub could not complete the sign-in. Please try again. "
+                "If the problem persists, contact your administrator."
+            )
+        return render_template(
+            "error.html", status=400, message=message, detail=detail
+        ), 400
+
     try:
         # Exchange OAuth code for access token (validates state internally)
         token = get_github_token()
@@ -312,7 +444,9 @@ def callback():
         # Fetch user profile
         user = get_github_user(token)
         
-        # Store in session
+        # Rotate the session after authentication (mitigates session fixation),
+        # then store credentials server-side only (F-03).
+        rotate_session(session)
         session["access_token"] = token
         session["user"] = user
         session.permanent = True
@@ -668,13 +802,13 @@ def execute_scan_command(repo_path, scan_output_dir, job_id=None, repo_key=None)
     return ("".join(stdout_data) or "") + ("\n" + "".join(stderr_data) if "".join(stderr_data) else "")
 
 
-def run_repo_scan(repo, token, job_id=None):
+def run_repo_scan(repo, token, job_id=None, scanned_by=None):
     owner = ((repo.get("owner") or {}).get("login") or "").strip()
     repo_name = (repo.get("name") or "").strip()
     if not owner or not repo_name:
         raise ValueError("Invalid repository data.")
 
-    if not CLI_EXE.exists():
+    if SCANNER_MODE == "subprocess" and not CLI_EXE.exists():
         raise FileNotFoundError(f"Scanner executable not found at {CLI_EXE}.")
 
     repo_key = build_repo_key(owner, repo_name)
@@ -701,7 +835,15 @@ def run_repo_scan(repo, token, job_id=None):
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
     scan_output_dir = SCAN_REPORTS_DIR / Path(owner).name / Path(repo_name).name / timestamp
     scan_output_dir.mkdir(parents=True, exist_ok=True)
-    command_output = execute_scan_command(repo_path, scan_output_dir, job_id=job_id, repo_key=repo_key)
+    # Record the initiating user for per-user report authorization (F-06).
+    write_scan_owner(scan_output_dir, scanned_by)
+    if SCANNER_MODE == "inprocess":
+        # In-process scan (portable, container-safe): writes report.json (F-19).
+        import scanner_lib
+        scanner_lib.scan_to_dir(repo_path, scan_output_dir, repo_name)
+        command_output = ""
+    else:
+        command_output = execute_scan_command(repo_path, scan_output_dir, job_id=job_id, repo_key=repo_key)
 
     report_path = scan_output_dir / "report.json"
     if not report_path.exists():
@@ -726,9 +868,24 @@ def run_repo_scan(repo, token, job_id=None):
         with open(pdf_path, "wb") as pdf_file:
             pdf_file.write(build_pdf_bytes(build_repo_pdf_lines(scan_result)))
     
-    # Track this scan in statistics
-    track_scan_completion(scan_result)
-    
+    # Track this scan in durable, per-user statistics (best-effort).
+    try:
+        record_scan_event(
+            scanned_by,
+            scan_result.get("severity_counts"),
+            scan_result.get("total_findings"),
+        )
+    except Exception as exc:
+        logger.warning(f"Failed to record scan statistics: {exc}")
+
+    # Emit scan + findings metrics (F-16).
+    try:
+        observability.observe_scan("success")
+        for severity, count in (scan_result.get("severity_counts") or {}).items():
+            observability.observe_findings(str(severity).lower(), int(count or 0))
+    except Exception:  # pragma: no cover - metrics must never break a scan
+        pass
+
     return scan_result
 
 
@@ -878,7 +1035,8 @@ def build_bulk_pdf_lines(report):
 
 
 def save_bulk_report(report):
-    report_id = datetime.now(timezone.utc).strftime("%Y%m%d%H%M%S")
+    # Unguessable id (defense in depth alongside the owner check, F-06).
+    report_id = uuid.uuid4().hex
     output_dir = SCAN_REPORTS_DIR / "bulk" / report_id
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -906,7 +1064,7 @@ def save_bulk_report(report):
     return report
 
 
-def run_bulk_scan_job(job_id, repos, token, visibility, session_id=None):
+def run_bulk_scan_job(job_id, repos, token, visibility, session_id=None, scanned_by=None):
     try:
         append_bulk_scan_log(job_id, f"Starting bulk scan for {len(repos)} repositories.")
         successes = []
@@ -951,7 +1109,7 @@ def run_bulk_scan_job(job_id, repos, token, visibility, session_id=None):
 
                 append_bulk_scan_log(job_id, f"[{index}/{len(repos)}] Cloning or reusing local copy for {label}.")
                 update_bulk_scan_job(job_id, current_repo=label, current_repo_key=repo_key)
-                result = run_repo_scan(repo, token, job_id=job_id)
+                result = run_repo_scan(repo, token, job_id=job_id, scanned_by=scanned_by)
                 successes.append(result)
                 append_bulk_scan_log(
                     job_id,
@@ -1037,7 +1195,20 @@ def run_bulk_scan_job(job_id, repos, token, visibility, session_id=None):
 
         report = build_aggregate_summary(successes, failures, visibility)
         report["skipped_repositories"] = skipped
+        # Record the initiating user so only they can download the bulk report (F-06).
+        report["owner_login"] = (scanned_by or "").strip()
         report = save_bulk_report(report)
+        # Durable terminal state (F-01), best-effort.
+        try:
+            jobs_repo.update_job(
+                job_id,
+                status="completed",
+                scanned_repositories=report.get("scanned_repositories", 0),
+                failed_repositories=report.get("failed_repositories", 0),
+                report_id=report.get("report_id"),
+            )
+        except Exception as exc:
+            logger.warning(f"Could not persist completed job {job_id}: {exc}")
         append_bulk_scan_log(
             job_id,
             f"Bulk scan finished. {report.get('scanned_repositories', 0)} succeeded, {report.get('failed_repositories', 0)} failed, {len(skipped)} skipped.",
@@ -1080,7 +1251,12 @@ def run_bulk_scan_job(job_id, repos, token, visibility, session_id=None):
             pending_repositories=[],
             updated_at=datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
         )
-        
+        # Durable failure state (F-01), best-effort.
+        try:
+            jobs_repo.update_job(job_id, status="failed", error=str(exc)[:1000])
+        except Exception as db_exc:
+            logger.warning(f"Could not persist failed job {job_id}: {db_exc}")
+
         # NEW: Create failure notification
         if session_id:
             add_session_notification(
@@ -1151,8 +1327,8 @@ def scan():
 
     # Run scan with comprehensive error handling
     try:
-        result = run_repo_scan(repo, token)
-        
+        result = run_repo_scan(repo, token, scanned_by=current_user_login())
+
         # Validate scan result
         if not result or not isinstance(result, dict):
             return jsonify({"error": "Invalid scan result"}), 500
@@ -1187,26 +1363,40 @@ def scan():
         return jsonify({"error": "Unexpected scan error"}), 500
 
 
-@app.route("/scan-all", methods=["POST"])
-def scan_all():
-    token = session.get("access_token")
-    if not token:
-        return jsonify({"error": "Unauthorized"}), 401
+def launch_bulk_scan(repos, token, visibility, scanned_by, idempotency_key=None):
+    """Create and start a durable bulk scan job.
 
-    payload = request.get_json(silent=True) or request.form
-    visibility = (payload.get("visibility") or "both").strip().lower()
-    if visibility not in {"public", "private", "both"}:
-        return jsonify({"error": "Invalid visibility filter."}), 400
-
-    repos = get_repos(token)
-    if visibility != "both":
-        repos = [repo for repo in repos if repo.get("visibility") == visibility]
-    if not repos:
-        return jsonify({"error": "No repositories available to scan."}), 400
-
+    Shared by the legacy ``/scan-all`` route and the versioned ``/api/v1/scans``
+    endpoint so the orchestration logic lives in exactly one place. Returns a
+    dict describing the job (or the idempotent replay).
+    """
     job_id = uuid.uuid4().hex
-    session_id = get_session_id()  # NEW: Get session ID
-    
+    session_id = get_session_id()
+
+    # Durable job record + idempotency (F-01 / F-13). Best-effort so a DB hiccup
+    # never blocks scanning, but an idempotent replay short-circuits here.
+    try:
+        db_job, is_new = jobs_repo.create_job(
+            job_id,
+            scanned_by,
+            job_type="bulk",
+            total_repositories=len(repos),
+            visibility=visibility,
+            idempotency_key=idempotency_key,
+            status="running",
+        )
+        if not is_new:
+            return {
+                "job_id": db_job["id"],
+                "status": db_job["status"],
+                "visibility": db_job.get("visibility"),
+                "total_repositories": db_job.get("total_repositories", 0),
+                "idempotent": True,
+            }
+        job_id = db_job["id"]
+    except Exception as exc:
+        logger.warning(f"Could not persist scan job: {exc}")
+
     with BULK_SCAN_JOBS_LOCK:
         BULK_SCAN_JOBS[job_id] = {
             "job_id": job_id,
@@ -1225,36 +1415,53 @@ def scan_all():
             "current_repo_key": None,
             "current_process": None,
             "skip_requests": set(),
-            "session_id": session_id,  # NEW: Store session ID
+            "session_id": session_id,
             "created_at": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
             "updated_at": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
         }
 
     worker = threading.Thread(
         target=run_bulk_scan_job,
-        args=(job_id, repos, token, visibility, session_id),  # NEW: Pass session_id
+        args=(job_id, repos, token, visibility, session_id, scanned_by),
         daemon=True,
     )
     worker.start()
 
     append_bulk_scan_log(job_id, "Bulk scan job created.")
-    
-    # NEW: Create initial notification
     add_session_notification(
         "scan_started",
         "Bulk Scan Starting",
         f"Preparing to scan {len(repos)} repositories...",
-        {"job_id": job_id, "repo_count": len(repos)}
+        {"job_id": job_id, "repo_count": len(repos)},
     )
-    
-    return jsonify(
-        {
-            "job_id": job_id,
-            "status": "running",
-            "visibility": visibility,
-            "total_repositories": len(repos),
-        }
-    )
+    return {
+        "job_id": job_id,
+        "status": "running",
+        "visibility": visibility,
+        "total_repositories": len(repos),
+    }
+
+
+@app.route("/scan-all", methods=["POST"])
+def scan_all():
+    token = session.get("access_token")
+    if not token:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    payload = request.get_json(silent=True) or request.form
+    visibility = (payload.get("visibility") or "both").strip().lower()
+    if visibility not in {"public", "private", "both"}:
+        return jsonify({"error": "Invalid visibility filter."}), 400
+
+    repos = get_repos(token)
+    if visibility != "both":
+        repos = [repo for repo in repos if repo.get("visibility") == visibility]
+    if not repos:
+        return jsonify({"error": "No repositories available to scan."}), 400
+
+    idempotency_key = (request.headers.get("Idempotency-Key") or "").strip() or None
+    result = launch_bulk_scan(repos, token, visibility, current_user_login(), idempotency_key)
+    return jsonify(result)
 
 
 @app.route("/scan-all/<job_id>")
@@ -1263,6 +1470,7 @@ def scan_all_status(job_id):
     if not token:
         return jsonify({"error": "Unauthorized"}), 401
 
+    enforce_job_owner(job_id)
     with BULK_SCAN_JOBS_LOCK:
         job = BULK_SCAN_JOBS.get(job_id)
         if not job:
@@ -1287,6 +1495,7 @@ def scan_all_skip(job_id):
     if not token:
         return jsonify({"error": "Unauthorized"}), 401
 
+    enforce_job_owner(job_id)
     payload = request.get_json(silent=True) or request.form
     owner = (payload.get("owner") or "").strip()
     repo_name = (payload.get("repo_name") or "").strip()
@@ -1320,6 +1529,7 @@ def scan_all_stop(job_id):
     if not token:
         return jsonify({"error": "Unauthorized"}), 401
 
+    enforce_job_owner(job_id)
     process_to_kill = None
     current_repo = None
     current_pid = None
@@ -1376,6 +1586,11 @@ def download_bulk_report(report_id, file_format):
     if not target or not target.exists():
         abort(404)
 
+    # Owner-only access: reject cross-user downloads (anti-IDOR, F-06).
+    if not is_authorized_for_bulk_report(report_dir / "bulk-report.json", current_user_login()):
+        app.logger.warning("Denied cross-user bulk report access for %s", Path(report_id).name)
+        abort(403)
+
     as_attachment = request.args.get("download") == "1"
     return send_file(target, as_attachment=as_attachment, download_name=target.name)
 
@@ -1406,7 +1621,12 @@ def repo_report(owner, repo_name, scan_id, file_format):
         # Log the missing file for debugging
         app.logger.error(f"Report file not found: {target}")
         abort(404, description=f"Report file not found: {file_format}")
-    
+
+    # Owner-only access: reject cross-user downloads (anti-IDOR, F-06).
+    if not is_authorized_for_scan(report_dir, current_user_login()):
+        app.logger.warning("Denied cross-user report access for %s/%s/%s", owner, repo_name, scan_id)
+        abort(403)
+
     # Verify file size to prevent serving empty files
     if target.stat().st_size == 0:
         app.logger.error(f"Report file is empty: {target}")
@@ -1515,6 +1735,9 @@ def scan_history():
                             continue
                         report_json = scan_dir / "report.json"
                         if report_json.exists():
+                            # Only surface scans initiated by the current user (F-06).
+                            if not is_authorized_for_scan(scan_dir, current_user_login()):
+                                continue
                             try:
                                 with open(report_json, encoding="utf-8") as f:
                                     report_data = json.load(f)
@@ -1629,9 +1852,9 @@ def session_stats():
         return jsonify({"error": "Unauthorized"}), 401
     
     try:
-        # Get today's statistics
-        stats = get_statistics()
-        
+        # Get today's statistics for the current user
+        stats = get_statistics(current_user_login())
+
         # Add total repository count
         total_repositories = len(get_repos(token)) if token else 0
         stats["total_repositories"] = total_repositories
@@ -1733,6 +1956,94 @@ def get_bulk_scan_sessions():
 
 
 # ============================================================================
+# DURABLE JOBS API (v1) — owner-scoped, survives restarts (F-01)
+# ============================================================================
+
+@app.route("/api/v1/jobs")
+@require_login
+def api_list_jobs():
+    """List the current user's durable scan jobs (most recent first)."""
+    return jsonify({"jobs": jobs_repo.list_jobs_for_user(current_user_login())})
+
+
+@app.route("/api/v1/openapi.json")
+def api_openapi():
+    """OpenAPI 3 document for the versioned API (F-13)."""
+    return jsonify(build_openapi_spec())
+
+
+@app.route("/api/v1/scans", methods=["POST"])
+def api_create_scan():
+    """Create a scan job (versioned API, validated, idempotent).
+
+    Uses the consistent error envelope with the request correlation id. Bulk
+    scans reuse the shared ``launch_bulk_scan`` orchestration.
+    """
+    token = session.get("access_token")
+    if not token:
+        return api_error("unauthorized", "Authentication required", 401)
+
+    payload = request.get_json(silent=True)
+    data, errors = validate_scan_request(payload if payload is not None else {})
+    if errors:
+        return api_error("validation_error", "Request validation failed", 422, details=errors)
+
+    # Idempotency-Key header takes precedence over the body field.
+    idempotency_key = (
+        (request.headers.get("Idempotency-Key") or "").strip()
+        or data.get("idempotency_key")
+        or None
+    )
+
+    if data["type"] == "single":
+        return api_error(
+            "not_implemented",
+            "Single-repository scans via the v1 API are not yet available; use bulk.",
+            501,
+        )
+
+    visibility = data["visibility"]
+    try:
+        repos = get_repos(token)
+    except Exception as exc:
+        app.logger.error(f"Failed to list repositories: {exc}")
+        return api_error("upstream_error", "Failed to list repositories from GitHub", 502)
+
+    if visibility != "both":
+        repos = [repo for repo in repos if repo.get("visibility") == visibility]
+    if not repos:
+        return api_error("no_repositories", "No repositories available to scan", 422)
+
+    result = launch_bulk_scan(repos, token, visibility, current_user_login(), idempotency_key)
+    status = 200 if result.get("idempotent") else 202
+    return jsonify(result), status
+
+
+@app.route("/api/v1/jobs/<job_id>/cancel", methods=["POST"])
+@require_login
+def api_cancel_job(job_id):
+    """Request cancellation of a job (owner-only). Cooperative: the worker stops
+    at the next safe checkpoint (F-02)."""
+    ok = jobs_repo.request_cancel(Path(job_id).name, owner_login=current_user_login())
+    if not ok:
+        return api_error("not_found", "Job not found or not owned by you", 404)
+    return jsonify({"status": "cancel_requested", "job_id": Path(job_id).name})
+
+
+@app.route("/api/v1/jobs/<job_id>")
+@require_login
+def api_get_job(job_id):
+    """Fetch a single durable job, enforcing ownership (anti-IDOR, F-06)."""
+    job = jobs_repo.get_job(Path(job_id).name)
+    if not job:
+        return jsonify({"error": "Job not found"}), 404
+    if job.get("owner_login") != current_user_login():
+        app.logger.warning("Denied cross-user job access for %s", job_id)
+        abort(403)
+    return jsonify(job)
+
+
+# ============================================================================
 # LEGAL & DOCUMENTATION PAGES
 # ============================================================================
 
@@ -1775,7 +2086,12 @@ def bad_request(error):
     """Handle 400 Bad Request errors."""
     if request.is_json or request.path.startswith("/api/"):
         return jsonify({"error": "Bad request", "details": str(error)}), 400
-    return render_template("error.html", status_code=400, message="Bad request"), 400
+    return render_template(
+        "error.html",
+        status=400,
+        message="Bad Request",
+        detail="The request was invalid or malformed.",
+    ), 400
 
 
 @app.errorhandler(403)
@@ -1783,7 +2099,12 @@ def forbidden(error):
     """Handle 403 Forbidden errors."""
     if request.is_json or request.path.startswith("/api/"):
         return jsonify({"error": "Forbidden", "details": str(error)}), 403
-    return render_template("error.html", status_code=403, message="Forbidden"), 403
+    return render_template(
+        "error.html",
+        status=403,
+        message="Forbidden",
+        detail="You do not have permission to access this resource.",
+    ), 403
 
 
 @app.errorhandler(404)
@@ -1791,7 +2112,12 @@ def not_found(error):
     """Handle 404 Not Found errors."""
     if request.is_json or request.path.startswith("/api/"):
         return jsonify({"error": "Not found", "details": str(error)}), 404
-    return render_template("error.html", status_code=404, message="Page not found"), 404
+    return render_template(
+        "error.html",
+        status=404,
+        message="Page Not Found",
+        detail="The page you requested does not exist.",
+    ), 404
 
 
 @app.errorhandler(500)
@@ -1800,10 +2126,24 @@ def internal_server_error(error):
     logger.error(f"Internal server error: {error}", exc_info=True)
     if request.is_json or request.path.startswith("/api/"):
         return jsonify({"error": "Internal server error", "details": "Please try again later"}), 500
-    return render_template("error.html", status_code=500, message="Internal server error"), 500
+    return render_template(
+        "error.html",
+        status=500,
+        message="Internal Server Error",
+        detail="An unexpected error occurred. Please try again later.",
+    ), 500
 
 
 if __name__ == "__main__":
+    # Startup recovery: any job left 'running'/'queued' by a previous process is
+    # orphaned (its thread died with the process); mark it 'interrupted' (F-01).
+    try:
+        interrupted = jobs_repo.mark_stale_running_as_interrupted()
+        if interrupted:
+            logger.info(f"Startup recovery: marked {interrupted} stale job(s) as interrupted")
+    except Exception as exc:
+        logger.warning(f"Startup job recovery failed: {exc}")
+
     # Only use debug mode in development
     debug_mode = os.environ.get("FLASK_ENV", "development") == "development"
     app.run(debug=debug_mode, host="0.0.0.0", port=5000)

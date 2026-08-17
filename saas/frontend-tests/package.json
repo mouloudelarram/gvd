@@ -1,0 +1,16 @@
+{
+  "name": "gvd-frontend-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Playwright + axe-core accessibility and journey tests for the GVD web UI.",
+  "scripts": {
+    "test": "playwright test",
+    "test:headed": "playwright test --headed",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.10.1",
+    "@playwright/test": "1.62.1"
+  }
+}
+

@@ -3,6 +3,31 @@
  * Cleaner + modernized version
  */
 
+/**
+ * CSRF protection: automatically attach the per-session CSRF token (from the
+ * <meta name="csrf-token"> tag) to all same-origin state-changing fetch requests.
+ * This wraps window.fetch once, so existing call sites need no changes (F-12).
+ */
+(function installCsrfFetchWrapper() {
+  const meta = document.querySelector('meta[name="csrf-token"]');
+  const token = meta ? meta.getAttribute("content") : "";
+  if (!token || !window.fetch) return;
+  const SAFE = new Set(["GET", "HEAD", "OPTIONS", "TRACE"]);
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = function (input, init) {
+    init = init || {};
+    const method = String(
+      init.method || (typeof input === "object" && input && input.method) || "GET"
+    ).toUpperCase();
+    const url = typeof input === "string" ? input : (input && input.url) || "";
+    const sameOrigin = url.startsWith("/") || url.startsWith(window.location.origin);
+    if (sameOrigin && !SAFE.has(method)) {
+      init.headers = Object.assign({}, init.headers, { "X-CSRFToken": token });
+    }
+    return originalFetch(input, init);
+  };
+})();
+
 window.GVD = {
   state: {
     user: null,
@@ -99,29 +124,73 @@ window.GVD = {
   },
 
   /**
-   * Modal system
+   * Modal system (WCAG 2.2 AA: 2.4.3 focus order, 2.1.2 no keyboard trap)
    */
   modal: {
+    _lastTrigger: null,
+    _keydownHandler: null,
+
+    _focusable(modal) {
+      return Array.from(
+        modal.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter(el => !el.hidden && !el.disabled && el.offsetParent !== null);
+    },
+
     open(modalId) {
       const modal = document.getElementById(modalId);
 
       if (!modal) return;
 
+      // Remember the element that opened the modal to restore focus on close.
+      this._lastTrigger =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null;
+
       modal.hidden = false;
       modal.style.display = "flex";
+      modal.setAttribute("role", "dialog");
+      modal.setAttribute("aria-modal", "true");
 
       document.body.classList.add("modal-open");
 
       window.GVD.state.modals[modalId] = true;
 
+      // Keyboard handling: Escape closes, Tab is trapped within the dialog.
+      this._keydownHandler = (e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          this.close(modalId);
+          return;
+        }
+
+        if (e.key === "Tab") {
+          const focusable = this._focusable(modal);
+          if (focusable.length === 0) return;
+
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+
+          if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      };
+
+      modal.addEventListener("keydown", this._keydownHandler);
+
       // Focus first element
       setTimeout(() => {
-        const focusable = modal.querySelector(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
+        const focusable = this._focusable(modal);
 
-        if (focusable) {
-          focusable.focus();
+        if (focusable.length > 0) {
+          focusable[0].focus();
         }
       }, 50);
     },
@@ -131,12 +200,23 @@ window.GVD = {
 
       if (!modal) return;
 
+      if (this._keydownHandler) {
+        modal.removeEventListener("keydown", this._keydownHandler);
+        this._keydownHandler = null;
+      }
+
       modal.hidden = true;
       modal.style.display = "none";
 
       document.body.classList.remove("modal-open");
 
       window.GVD.state.modals[modalId] = false;
+
+      // Restore focus to the element that triggered the modal.
+      if (this._lastTrigger && typeof this._lastTrigger.focus === "function") {
+        this._lastTrigger.focus();
+      }
+      this._lastTrigger = null;
     }
   },
 
@@ -152,6 +232,12 @@ window.GVD = {
       const toast = document.createElement("div");
 
       toast.className = `toast toast-${type}`;
+
+      // Errors/warnings are assertive ("alert"); everything else is polite
+      // ("status"). Screen readers announce the toast when inserted.
+      const assertive = type === "error" || type === "warning";
+      toast.setAttribute("role", assertive ? "alert" : "status");
+      toast.setAttribute("aria-live", assertive ? "assertive" : "polite");
 
       toast.innerHTML = `
         <div class="toast-content">
@@ -197,21 +283,34 @@ window.GVD = {
    * Dropdown system
    */
   dropdown: {
+    // Keep the toggle's aria-expanded in sync with the open state (WCAG 4.1.2).
+    _syncAria(dropdownElement) {
+      if (!dropdownElement) return;
+      const isOpen = dropdownElement.classList.contains("open");
+      const toggle = dropdownElement.querySelector(".dropdown-toggle");
+      if (toggle) {
+        toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+      }
+    },
+
     toggle(dropdownElement) {
       if (!dropdownElement) return;
 
       dropdownElement.classList.toggle("open");
+      this._syncAria(dropdownElement);
     },
 
     close(dropdownElement) {
       if (!dropdownElement) return;
 
       dropdownElement.classList.remove("open");
+      this._syncAria(dropdownElement);
     },
 
     closeAll() {
       document.querySelectorAll(".dropdown.open").forEach(dropdown => {
         dropdown.classList.remove("open");
+        this._syncAria(dropdown);
       });
     }
   },
@@ -370,7 +469,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const dropdown = this.closest(".dropdown");
 
       if (dropdown) {
-        dropdown.classList.toggle("open");
+        window.GVD.dropdown.toggle(dropdown);
       }
     });
   });

@@ -1,4 +1,14 @@
-# GVD Enterprise Bulk Scanning - Complete Implementation Guide
+﻿# GVD Enterprise Bulk Scanning - Complete Implementation Guide
+
+> **⚠️ Historical / superseded (Phase 9, C-27).** This guide describes the
+> original manual rollout of bulk scanning by copying snippets from
+> `BACKEND_CHANGES.py`, `FRONTEND_CHANGES.js`, and `HTML_CHANGES.html`. That
+> feature is now **fully integrated** into the live code, so those three
+> snippet files were removed. The steps below are kept for historical context;
+> for the current implementation see:
+> - Backend: `saas/app.py` (bulk-scan routes/jobs) and `saas/bulk_scan_service.py` (`BulkScanManager`)
+> - Frontend: `saas/static/js/bulk-scan-and-notifications.js`
+> - Markup: the bulk-scan modal in `saas/templates/dashboard.html`
 
 ## Overview
 This guide provides step-by-step instructions to upgrade GVD's "Scan All" functionality into an enterprise-grade bulk scanning system.

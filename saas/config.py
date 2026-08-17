@@ -1,7 +1,9 @@
 """Configuration and utilities for GVD Flask application."""
 
+import hmac
 import secrets
-from flask import session, render_template
+
+from flask import abort, current_app, render_template, request, session
 
 
 def generate_csrf_token():
@@ -9,6 +11,41 @@ def generate_csrf_token():
     if '_csrf_token' not in session:
         session['_csrf_token'] = secrets.token_urlsafe(32)
     return session['_csrf_token']
+
+
+# Methods that never change state and are therefore CSRF-exempt.
+CSRF_SAFE_METHODS = {"GET", "HEAD", "OPTIONS", "TRACE"}
+# Paths exempt from CSRF (unauthenticated infra endpoints).
+CSRF_EXEMPT_PATHS = {"/health"}
+
+
+def _csrf_token_from_request():
+    """Read the CSRF token from a header (fetch/XHR) or a form field."""
+    return (
+        request.headers.get("X-CSRFToken")
+        or request.headers.get("X-CSRF-Token")
+        or (request.form.get("csrf_token") if request.form else None)
+        or ""
+    )
+
+
+def validate_csrf():
+    """Reject state-changing browser requests without a valid CSRF token.
+
+    Uses a constant-time comparison against the per-session token. Skipped for
+    safe methods, exempt infra paths, and during tests (``TESTING``), where CSRF
+    is covered by dedicated unit tests instead of every integration POST.
+    """
+    if request.method in CSRF_SAFE_METHODS:
+        return
+    if request.path in CSRF_EXEMPT_PATHS:
+        return
+    if current_app.config.get("TESTING"):
+        return
+    sent = str(_csrf_token_from_request())
+    stored = str(session.get("_csrf_token", ""))
+    if not stored or not sent or not hmac.compare_digest(stored, sent):
+        abort(400, description="CSRF validation failed")
 
 
 def setup_error_handlers(app):

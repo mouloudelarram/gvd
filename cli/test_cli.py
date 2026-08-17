@@ -322,18 +322,18 @@ class TestReportExporter:
 class TestCLIIntegration:
     """Test CLI integration."""
     
-    @patch('cli.is_git_repo')
-    @patch('cli.get_repo_root')
-    @patch('cli.get_repo_name')
-    @patch('cli.GitHistoryScanner')
-    @patch('cli.FileScanner')
-    @patch('cli.ReportExporter')
-    def test_scan_repo_integration(self, mock_exporter, mock_file_scanner, 
-                                  mock_history_scanner, mock_get_name, 
+    @patch('cli.cli.is_git_repo')
+    @patch('cli.cli.get_repo_root')
+    @patch('cli.cli.get_repo_name')
+    @patch('cli.cli.GitHistoryScanner')
+    @patch('cli.cli.FileScanner')
+    @patch('cli.cli.ReportExporter')
+    def test_scan_repo_integration(self, mock_exporter, mock_file_scanner,
+                                  mock_history_scanner, mock_get_name,
                                   mock_get_root, mock_is_git_repo):
         """Test complete repository scanning integration."""
-        from cli import scan_repo
-        
+        from cli.cli import scan_repo
+
         # Setup mocks
         mock_is_git_repo.return_value = True
         mock_get_root.return_value = Path("/tmp/repo")

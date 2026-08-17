@@ -23,12 +23,13 @@
         <div class="filter-controls">
           <div class="search-wrapper">
             <input type="text" id="repo-search" placeholder="Search repositories..." autocomplete="off"
-              class="search-input">
-            <div class="search-results" id="search-results" hidden></div>
+              class="search-input" aria-label="Search repositories" role="searchbox"
+              aria-controls="search-results">
+            <div class="search-results" id="search-results" role="listbox" aria-label="Search results" hidden></div>
           </div>
 
           <div class="filter-dropdown">
-            <select id="repo-visibility-filter" class="filter-select">
+            <select id="repo-visibility-filter" class="filter-select" aria-label="Filter repositories by visibility">
               <option value="both" {% if current_visibility=='both' %}selected{% endif %}>All Repositories</option>
               <option value="public" {% if current_visibility=='public' %}selected{% endif %}>Public</option>
               <option value="private" {% if current_visibility=='private' %}selected{% endif %}>Private</option>
@@ -473,141 +474,3 @@
   }
 </script>
 {% endblock %}
-'<div class="bulk-report-item__header">',
-  '<h4>' + escapeHtml(repo.owner + "/" + repo.repo_name) + '</h4>',
-  '<span class="modal__meta-item">Findings: ' + escapeHtml(repo.total_findings) + '</span>',
-  '</div>',
-'<p class="bulk-report-item__meta">Path: ' + escapeHtml(repo.repo_path) + '</p>',
-'<p class="bulk-report-item__meta">Critical: ' + escapeHtml(counts.CRITICAL || 0) + ' | High: ' + escapeHtml(counts.HIGH
-  || 0) + ' | Medium: ' + escapeHtml(counts.MEDIUM || 0) + ' | Low: ' + escapeHtml(counts.LOW || 0) + '</p>',
-'<div class="bulk-report-item__actions">',
-  '<button class="button button--secondary" type="button"
-    data-report-view-json="' + escapeHtml(urls.view_json || "") + '" data-report-title="' + escapeHtml(repo.owner + " /"
-    + repo.repo_name + ' JSON report' ) + '">View JSON</button>' , '<a class="button button--secondary" href="' +
-    escapeHtml(urls.download_json || "#" ) + '">Download JSON</a>'
-    , '<button class="button button--secondary" type="button" data-report-view-pdf="' + escapeHtml(urls.view_pdf || "" )
-    + '" data-report-title="' + escapeHtml(repo.owner + "/" + repo.repo_name + ' PDF report' ) + '">View PDF</button>'
-    , '<a class="button button--secondary" href="' + escapeHtml(urls.download_pdf || "#" ) + '">Download PDF</a>'
-    , '</div>' , '</article>' ].join(""); }).join(""); wireReportActionButtons(bulkReportList); } function
-    renderBulkFailures(result) { const failures=result.failures || []; if (!failures.length) {
-    bulkFailureList.innerHTML='<p class="scan-empty">No repository failures.</p>' ; return; }
-    bulkFailureList.innerHTML=failures.map(function(failure) { return
-    [ '<article class="bulk-report-item bulk-report-item--failure">' , '<div class="bulk-report-item__header">' , '<h4>'
-    + escapeHtml(failure.owner + "/" + failure.repo_name) + '</h4>' , '</div>' , '<p class="bulk-report-item__meta">' +
-    escapeHtml(failure.error || "Unknown error" ) + '</p>' , '</article>' ].join(""); }).join(""); } function
-    renderBulkSkipped(result) { const skipped=result.skipped_repositories || []; if (!skipped.length) {
-    bulkSkippedList.innerHTML='<p class="scan-empty">No skipped repositories.</p>' ; return; }
-    bulkSkippedList.innerHTML=skipped.map(function(item) { return [ '<article class="bulk-report-item">'
-    , '<div class="bulk-report-item__header">' , '<h4>' + escapeHtml(item.owner + "/" + item.repo_name) + '</h4>'
-    , '<span class="modal__meta-item">Skipped</span>' , '</div>' , '<p class="bulk-report-item__meta">' +
-    escapeHtml(item.error || "Skipped by user." ) + '</p>' , '</article>' ].join(""); }).join(""); } function
-    renderBulkLogs(job) { const logs=job.logs || []; bulkScanLog.textContent=logs.length ? logs.join("\n")
-    : "No logs yet." ; bulkScanLog.scrollTop=bulkScanLog.scrollHeight; } async function pollBulkScanJob(jobId) { try {
-    const response=await fetch("/scan-all/" + encodeURIComponent(jobId)); const result=await response.json(); if
-    (!response.ok) { throw new Error(result.error || "Unable to load bulk scan status." ); } activeBulkScanJobId=jobId;
-    renderBulkLogs(result); renderBulkCurrentRepo(result); renderBulkPending(result); renderBulkRepositories(result);
-    renderBulkFailures(result); renderBulkSkipped(result); bulkScanSummary.textContent="Scanned " +
-    (result.scanned_repositories || 0) + " of " + (result.total_repositories || 0) + " repositories. Failed: " +
-    (result.failed_repositories || 0) + "." ; if (result.status==="completed" && result.report) { stopBulkScanPolling();
-    bulkScanModalTitle.textContent="Bulk scan report" ; renderBulkMeta(result.report);
-    bulkScanSummary.textContent=result.report.total_findings ? "The full scan completed and found " +
-    result.report.total_findings + " potential issue(s) across your repositories."
-    : "The full scan completed and no vulnerabilities were found." ; renderBulkCurrentRepo({ status: "completed" });
-    renderBulkPending({ pending_repositories: [] }); renderBulkRepositories(result.report);
-    renderBulkFailures(result.report); renderBulkSkipped(result.report); if (result.report.download_urls) {
-    bulkViewJson.dataset.reportViewJson=(result.report.view_urls || {}).json || "" ;
-    bulkDownloadJson.href=result.report.download_urls.json; bulkViewPdf.dataset.reportViewPdf=(result.report.view_urls
-    || {}).pdf || "" ; bulkDownloadPdf.href=result.report.download_urls.pdf; setActionState(bulkViewJson, true);
-    bulkDownloadJson.classList.remove("is-disabled"); setActionState(bulkViewPdf, true);
-    bulkDownloadPdf.classList.remove("is-disabled"); } return; } if (result.status==="failed" ) { stopBulkScanPolling();
-    throw new Error(result.error || "Bulk scan failed." ); } bulkScanPollTimer=window.setTimeout(function() {
-    pollBulkScanJob(jobId); }, 1200); } catch (error) { stopBulkScanPolling();
-    bulkScanSummary.textContent="The full scan could not be completed." ;
-    bulkReportList.innerHTML='<p class="scan-empty">' + escapeHtml(error.message) + "</p>" ;
-    bulkFailureList.innerHTML='<p class="scan-empty">No repository-level details available.</p>' ;
-    bulkSkippedList.innerHTML='<p class="scan-empty">No repository-level details available.</p>' ;
-    bulkScanLog.textContent +="\n" + error.message; renderBulkCurrentRepo({ status: "failed" }); } } async function
-    requestBulkSkip(owner, repo) { if (!activeBulkScanJobId) { return; } try { const response=await fetch("/scan-all/" +
-    encodeURIComponent(activeBulkScanJobId) + "/skip" , { method: "POST" , headers: { "Content-Type"
-    : "application/json" }, body: JSON.stringify({ owner: owner, repo_name: repo }) }); const result=await
-    response.json(); if (!response.ok) { throw new Error(result.error || "Unable to skip repository." ); } } catch
-    (error) { bulkScanLog.textContent +="\n" + error.message; } }
-    document.querySelectorAll(".repo-card__details-button").forEach(function(button) { button.addEventListener("click",
-    async function(event) { event.preventDefault(); const owner=button.dataset.owner; const repo=button.dataset.repo;
-    setLoadingState(repo); openModal(); try { const response=await fetch("/repo-details/" + encodeURIComponent(owner)
-    + "/" + encodeURIComponent(repo)); if (!response.ok) { throw new Error("Unable to load repository details."); }
-    const details=await response.json(); modalTitle.textContent=details.full_name || details.name; renderMeta(details);
-    modalDescription.textContent=details.description || "No description provided." ;
-    modalReadme.textContent=details.readme || "README not available for this repository." ;
-    modalLink.href=details.html_url || "#" ; } catch (error) {
-    modalDescription.textContent="Repository details could not be loaded." ; modalReadme.textContent=error.message; }
-    }); }); modal.addEventListener("click", function(event) { if (event.target.dataset.closeModal==="true" ) {
-    closeModal(); } }); document.querySelectorAll(".scan-button").forEach(function(button) {
-    button.addEventListener("click", async function() { const owner=button.dataset.owner; const
-    repo=button.dataset.repo; const repoUrl=button.dataset.repoUrl; setScanLoadingState(repo); openScanModal(); try {
-    const response=await fetch("/scan", { method: "POST" , headers: { "Content-Type" : "application/json" }, body:
-    JSON.stringify({ owner: owner, repo_name: repo, repo_url: repoUrl }) }); const result=await response.json(); if
-    (!response.ok) { throw new Error(result.details || result.error || "Scan failed." ); }
-    scanModalTitle.textContent="Scan results for " + (result.repo_name || repo); renderScanMeta(result);
-    scanSummary.textContent=result.total_findings ? "The scan completed and found " + result.total_findings
-    + " potential issue(s)." : "The scan completed and no vulnerabilities were found." ; renderFindings(result);
-    scanOutput.textContent=result.command_output || "No scanner output captured." ; // Show and configure report buttons
-    const reportUrls=result.report_urls || {}; scanViewJson.hidden=false; scanViewPdf.hidden=false;
-    scanDownloadJson.hidden=false; scanDownloadPdf.hidden=false;
-    scanViewJson.dataset.reportViewJson=reportUrls.view_json || "" ; scanDownloadJson.href=reportUrls.download_json
-    || "#" ; scanViewPdf.dataset.reportViewPdf=reportUrls.view_pdf || "" ; scanDownloadPdf.href=reportUrls.download_pdf
-    || "#" ; } catch (error) { scanSummary.textContent="The scan could not be completed." ;
-    scanFindings.innerHTML='<p class="scan-empty">' + escapeHtml(error.message) + "</p>" ;
-    scanOutput.textContent=error.message; } }); }); scanModal.addEventListener("click", function(event) { if
-    (event.target.dataset.closeScanModal==="true" ) { closeScanModal(); } }); // Wire scan report buttons
-    scanViewJson.addEventListener("click", function() { if (scanViewJson.classList.contains("is-disabled")) { return; }
-    const url=scanViewJson.dataset.reportViewJson; if (url) { openJsonReport(url, "Scan JSON Report" ); } });
-    scanViewPdf.addEventListener("click", function() { if (scanViewPdf.classList.contains("is-disabled")) { return; }
-    const url=scanViewPdf.dataset.reportViewPdf; if (url) { openPdfReport(url, "Scan PDF Report" ); } });
-    scanAllButton.addEventListener("click", async function() { stopBulkScanPolling(); activeBulkScanJobId=null;
-    setBulkLoadingState(); openBulkScanModal(); try { const visibility=repoVisibilityFilter.value || "both" ; const
-    response=await fetch("/scan-all", { method: "POST" , headers: { "Content-Type" : "application/json" }, body:
-    JSON.stringify({ visibility: visibility }) }); const result=await response.json(); if (!response.ok) { throw new
-    Error(result.error || "Bulk scan failed." ); } activeBulkScanJobId=result.job_id;
-    bulkScanSummary.textContent="Bulk scan started for " + result.total_repositories + " " + visibility
-    + " repositories." ; pollBulkScanJob(result.job_id); } catch (error) { stopBulkScanPolling();
-    bulkScanSummary.textContent="The full scan could not be completed." ;
-    bulkReportList.innerHTML='<p class="scan-empty">' + escapeHtml(error.message) + "</p>" ;
-    bulkFailureList.innerHTML='<p class="scan-empty">No repository-level details available.</p>' ;
-    bulkSkippedList.innerHTML='<p class="scan-empty">No repository-level details available.</p>' ;
-    bulkScanLog.textContent=error.message; } }); bulkViewJson.addEventListener("click", function() { if
-    (bulkViewJson.classList.contains("is-disabled")) { return; }
-    openJsonReport(bulkViewJson.dataset.reportViewJson, "Bulk JSON report" ); }); bulkViewPdf.addEventListener("click",
-    function() { if (bulkViewPdf.classList.contains("is-disabled")) { return; }
-    openPdfReport(bulkViewPdf.dataset.reportViewPdf, "Bulk PDF report" ); });
-    skipCurrentButton.addEventListener("click", function() { if (skipCurrentButton.classList.contains("is-disabled") ||
-    !activeBulkScanJobId) { return; } const currentRepo=bulkCurrentRepo.querySelector("h4"); if (!currentRepo) { return;
-    } const parts=currentRepo.textContent.split("/"); const owner=parts[0] || "" ; const repo=parts.slice(1).join("/")
-    || "" ; requestBulkSkip(owner, repo); }); bulkScanModal.addEventListener("click", function(event) { if
-    (event.target.dataset.closeBulkScanModal==="true" ) { closeBulkScanModal(); } });
-    reportViewerModal.addEventListener("click", function(event) { if (event.target.dataset.closeReportViewer==="true" )
-    { closeReportViewer(); } }); document.addEventListener("keydown", function(event) { if (event.key==="Escape" &&
-    !modal.hidden) { closeModal(); } if (event.key==="Escape" && !scanModal.hidden) { closeScanModal(); } if
-    (event.key==="Escape" && !bulkScanModal.hidden) { closeBulkScanModal(); } if (event.key==="Escape" &&
-    !reportViewerModal.hidden) { closeReportViewer(); } }); repoVisibilityFilter.addEventListener("change",
-    applyVisibilityFilter); repoSearch.addEventListener("input", debounceSearch); repoSearch.addEventListener("focus",
-    function() { if (repoSearch.value.trim().length>= 2) {
-    searchResults.hidden = false;
-    }
-    });
-
-    document.addEventListener("click", function(event) {
-    if (!event.target.closest(".search-container")) {
-    searchResults.hidden = true;
-    }
-    });
-
-    repoVisibilityFilter.addEventListener("change", function() {
-    if (repoSearch.value.trim().length >= 2) {
-    debounceSearch();
-    }
-    });
-    </script>
-    </body>
-
-    </html>

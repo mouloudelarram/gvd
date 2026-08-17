@@ -77,7 +77,7 @@
       
       <div class="scan-report-actions">
         <a href="{{ url_for('repo_report', owner=scan.owner, repo_name=scan.repo_name, scan_id=scan.scan_id, file_format='json') }}" 
-           class="btn btn-ghost btn-sm" target="_blank">
+           class="btn btn-ghost btn-sm" target="_blank" rel="noopener noreferrer">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M14 10v4H2v-4M8 2v8M4 6l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
@@ -85,7 +85,7 @@
         </a>
         
         <a href="{{ url_for('repo_report', owner=scan.owner, repo_name=scan.repo_name, scan_id=scan.scan_id, file_format='pdf') }}" 
-           class="btn btn-ghost btn-sm" target="_blank">
+           class="btn btn-ghost btn-sm" target="_blank" rel="noopener noreferrer">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M14 10v4H2v-4M8 2v8M4 6l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>

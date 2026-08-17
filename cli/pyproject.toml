@@ -7,7 +7,13 @@ name = "gvd"
 version = "0.1.0"
 description = "Git Vulnerabilities Detector - Lightweight GitHub security scanning"
 authors = [{name = "GVD Team"}]
-dependencies = ["rich>=13.0.0", "reportlab>=4.0.0", "python-dateutil>=2.8.0"]
+# Pinned for reproducible builds (versions verified against the test baseline).
+# Upper bounds cap the next major to avoid unreviewed breaking changes.
+dependencies = [
+    "rich>=15.0.0,<16.0.0",
+    "reportlab>=4.5.1,<5.0.0",
+    "python-dateutil>=2.9.0,<3.0.0",
+]
 readme = "README.md"
 requires-python = ">=3.10"
 

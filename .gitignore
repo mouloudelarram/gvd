@@ -88,6 +88,12 @@ celerybeat-schedule
 
 # Environments
 .env
+.env.*
+# Keep intentionally-tracked, secret-free templates/examples:
+!.env.production
+!.env.production.template
+!.env.example
+!**/.env.example
 .venv
 env/
 venv/
@@ -132,5 +138,8 @@ gvd-report/
 
 #saas 
 /saas/.env
+/saas/data/
+*.db
+*.sqlite3
 /saas/repos/
 /saas/scan_reports/

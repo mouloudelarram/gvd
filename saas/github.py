@@ -12,6 +12,41 @@ def github_headers(token):
     }
 
 
+def _record_github_call(outcome):
+    """Best-effort GitHub API call metric (never breaks the request)."""
+    try:
+        from observability import observe_github_call
+
+        observe_github_call(outcome)
+    except Exception:  # pragma: no cover - metrics must never break a call
+        pass
+
+
+def github_get(url, **kwargs):
+    """`requests.get` wrapper that records a GitHub API call metric by outcome.
+
+    Outcome labels: ``success`` (2xx), ``rate_limited`` (403/429 with no
+    remaining quota), ``client_error`` (other 4xx), ``server_error`` (5xx),
+    ``error`` (network/timeout). The response is returned unchanged.
+    """
+    try:
+        response = requests.get(url, **kwargs)
+    except requests.RequestException:
+        _record_github_call("error")
+        raise
+
+    status = response.status_code
+    if status < 300:
+        _record_github_call("success")
+    elif status in (403, 429) and response.headers.get("X-RateLimit-Remaining") == "0":
+        _record_github_call("rate_limited")
+    elif status < 500:
+        _record_github_call("client_error")
+    else:
+        _record_github_call("server_error")
+    return response
+
+
 def get_repos(token) -> List[Dict]:
     """Fetch all user repositories with pagination."""
     repos = []
@@ -20,7 +55,7 @@ def get_repos(token) -> List[Dict]:
     
     while page <= max_pages:
         try:
-            response = requests.get(
+            response = github_get(
                 "https://api.github.com/user/repos",
                 headers=github_headers(token),
                 params={
@@ -90,7 +125,7 @@ def search_repos(token, query, visibility="all", page=1, per_page=20):
         return {"repos": [], "total_count": 0, "page": page, "per_page": per_page}
     
     try:
-        user_response = requests.get(
+        user_response = github_get(
             "https://api.github.com/user",
             headers=github_headers(token),
             timeout=30,
@@ -117,7 +152,7 @@ def search_repos(token, query, visibility="all", page=1, per_page=20):
         params["q"] += f" visibility:{visibility}"
     
     try:
-        response = requests.get(
+        response = github_get(
             "https://api.github.com/search/repositories",
             headers=github_headers(token),
             params=params,
@@ -143,7 +178,7 @@ def search_repos(token, query, visibility="all", page=1, per_page=20):
 def get_repo_details(token, owner, repo_name):
     """Fetch detailed information about a specific repository."""
     try:
-        repo_response = requests.get(
+        repo_response = github_get(
             f"https://api.github.com/repos/{owner}/{repo_name}",
             headers=github_headers(token),
             timeout=30,
@@ -156,7 +191,7 @@ def get_repo_details(token, owner, repo_name):
     # Fetch README
     readme_text = "README not available for this repository."
     try:
-        readme_response = requests.get(
+        readme_response = github_get(
             f"https://api.github.com/repos/{owner}/{repo_name}/readme",
             headers=github_headers(token),
             timeout=30,
@@ -190,4 +225,3 @@ def get_repo_details(token, owner, repo_name):
         "readme": readme_text,
         "owner": {"login": (repo.get("owner") or {}).get("login", "")},
     }
-

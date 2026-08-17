@@ -280,31 +280,32 @@ window.GVD.dashboard = {
    * Create search result item HTML
    */
   createSearchResultItem: function(repo) {
+    const esc = window.GVD.utils.escapeHtml;
     const initials = (repo.name || 'R').substring(0, 2).toUpperCase();
     const visibility = repo.visibility || 'public';
     const language = repo.language || 'Unknown';
-    const stars = repo.stargazers_count || 0;
+    const stars = Number(repo.stargazers_count) || 0;
     const fullName = repo.full_name || repo.name;
     const owner = repo.owner?.login || '';
     const repoUrl = repo.clone_url || '';
-    
+
     return `
-      <div class="search-result-item" data-owner="${owner}" data-repo="${repo.name}" data-repo-url="${repoUrl}" data-visibility="${visibility}">
-        <div class="search-result-icon" title="${window.GVD.utils.escapeHtml(fullName)}">
-          ${initials}
+      <div class="search-result-item" data-owner="${esc(owner)}" data-repo="${esc(repo.name)}" data-repo-url="${esc(repoUrl)}" data-visibility="${esc(visibility)}">
+        <div class="search-result-icon" title="${esc(fullName)}">
+          ${esc(initials)}
         </div>
         <div class="search-result-content">
           <h4 class="search-result-title">
-            ${window.GVD.utils.escapeHtml(fullName)}
+            ${esc(fullName)}
           </h4>
           <div class="search-result-meta">
-            <span class="search-result-badge ${visibility}">${visibility.toUpperCase()}</span>
-            <span>${window.GVD.utils.escapeHtml(language)}</span>
+            <span class="search-result-badge ${esc(visibility)}">${esc(String(visibility).toUpperCase())}</span>
+            <span>${esc(language)}</span>
             <span>⭐ ${stars}</span>
           </div>
         </div>
         <div class="search-result-actions">
-          <button class="btn btn-primary btn-sm search-scan-btn" type="button" data-owner="${owner}" data-repo="${repo.name}" data-repo-url="${repoUrl}" title="Scan ${window.GVD.utils.escapeHtml(repo.name)}">
+          <button class="btn btn-primary btn-sm search-scan-btn" type="button" data-owner="${esc(owner)}" data-repo="${esc(repo.name)}" data-repo-url="${esc(repoUrl)}" title="Scan ${esc(repo.name)}">
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M7 1v3M7 10v3M3 7h3M10 7h1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
               <circle cx="7" cy="7" r="1" fill="currentColor" />
@@ -962,7 +963,7 @@ window.GVD.dashboard = {
     }
   },
 
-  /**
+  /**/
   setModalLoadingState: function(modalId, repoName) {
     const modalTitle = document.getElementById(`${modalId.replace('-modal', '')}-title`);
     const modalMeta = document.getElementById(`${modalId.replace('-modal', '')}-meta`);
@@ -1216,9 +1217,9 @@ window.GVD.dashboard = {
             <div class="pdf-error">
               <h3>PDF Not Found</h3>
               <p>The PDF report could not be found or accessed.</p>
-              <p><strong>Error:</strong> ${verifyError.message}</p>
+              <p><strong>Error:</strong> ${window.GVD.utils.escapeHtml(verifyError.message || '')}</p>
               <div class="pdf-error-actions">
-                <a href="${url}" target="_blank" class="btn btn-primary">
+                <a href="${window.GVD.utils.escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
                   Try Opening in New Tab
                 </a>
                 <button class="btn btn-secondary" onclick="window.GVD.modal.close('report-viewer-modal')">
@@ -1299,10 +1300,10 @@ window.GVD.dashboard = {
               <h3>PDF Viewer Not Supported</h3>
               <p>Your browser doesn't support PDF viewing.</p>
               <div class="pdf-error-actions">
-                <a href="${url}" target="_blank" class="btn btn-primary">
+                <a href="${window.GVD.utils.escapeHtml(url)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
                   Open PDF in New Tab
                 </a>
-                <a href="${url}" download class="btn btn-secondary">
+                <a href="${window.GVD.utils.escapeHtml(url)}" download class="btn btn-secondary">
                   Download PDF
                 </a>
               </div>

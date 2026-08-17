@@ -45,7 +45,7 @@
         {% block header_actions %}
         {% if user is defined and user %}
         <div class="header-actions">
-          <button class="btn btn-ghost btn-sm" id="notifications-btn" aria-label="Notifications">
+          <button class="btn btn-ghost btn-sm" id="notifications-btn" aria-label="Notifications" aria-haspopup="true" aria-expanded="false" aria-controls="notifications-panel">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M8 2a4 4 0 0 0-4 4v3c0 .5-.2 1-.5 1.5L2 12h12l-1.5-1.5C12 10 12 9.5 12 9V6a4 4 0 0 0-4-4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
               <path d="M6.5 14a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -53,7 +53,7 @@
           </button>
           
           <div class="dropdown">
-            <button class="btn btn-ghost btn-sm dropdown-toggle" id="user-dropdown-toggle" aria-label="User menu">
+            <button class="btn btn-ghost btn-sm dropdown-toggle" id="user-dropdown-toggle" aria-label="User menu" aria-haspopup="menu" aria-expanded="false" aria-controls="user-dropdown">
               <div class="user-avatar">
                 <img src="{{ user.avatar_url or '#' }}" alt="{{ user.name or user.login }}" width="24" height="24">
               </div>
@@ -63,7 +63,7 @@
               </svg>
             </button>
             
-            <div class="dropdown-menu" id="user-dropdown">
+            <div class="dropdown-menu" id="user-dropdown" role="menu">
               <div class="dropdown-header">
                 <div class="dropdown-user-info">
                   <div class="dropdown-user-avatar">
@@ -116,8 +116,8 @@
   </footer>
   
   <!-- Toast Container -->
-  <div class="toast-container" id="toast-container"></div>
-  
+  <div class="toast-container" id="toast-container" role="status" aria-live="polite" aria-atomic="true"></div>
+
   <!-- Scripts -->
   <script src="{{ url_for('static', filename='js/base.js') }}"></script>
   <script src="{{ url_for('static', filename='js/bulk-scan-and-notifications.js') }}"></script>

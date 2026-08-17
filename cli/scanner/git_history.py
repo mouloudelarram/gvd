@@ -1,12 +1,13 @@
-import subprocess
 import re
 from pathlib import Path
-from typing import List, Generator
+from typing import Generator
 try:
     from cli.core.models import Finding
+    from cli.core.git_utils import run_git_command
     from cli.scanner.pattern_engine import PatternEngine
 except ImportError:
     from core.models import Finding
+    from core.git_utils import run_git_command
     from scanner.pattern_engine import PatternEngine
 
 class GitHistoryScanner:
@@ -15,19 +16,12 @@ class GitHistoryScanner:
 
     def scan_history(self, repo_path: Path, repo_name: str) -> Generator[Finding, None, None]:
         """Scan git history for patterns using git log -p."""
-        cmd = ["git", "log", "-p", "--all", "--full-history", "--no-merges"]
-        result = subprocess.run(
-            cmd,
-            cwd=repo_path,
-            capture_output=True,
-            text=True,
-            check=True,
-            errors="replace"
-        )
-        
+        cmd = ["log", "-p", "--all", "--full-history", "--no-merges"]
+        output = run_git_command(cmd, repo_path)
+
         current_commit = None
         current_file = None
-        for line in result.stdout.split('\n'):
+        for line in output.split('\n'):
             if line.startswith('commit '):
                 current_commit = line.split()[1]
             elif line.startswith('diff --git'):

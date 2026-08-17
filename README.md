@@ -167,11 +167,14 @@ gvd/
 │   ├── clone.py
 │   ├── requirements.txt
 │   ├── templates/
+│   │   ├── base.html
 │   │   ├── login.html
 │   │   └── dashboard.html
 │   ├── static/
-│   │   └── style.css
-│   └── repos/
+│   │   ├── css/            # modular stylesheets (variables, base, components, layout, …)
+│   │   ├── js/             # base.js, dashboard.js, bulk-scan-and-notifications.js
+│   │   └── images/         # favicon.png, logo.png
+│   └── repos/              # transient clone workspace (gitignored)
 ├── cli/
 │   ├── pyproject.toml
 │   ├── README.md
@@ -210,7 +213,7 @@ Main files:
 - `saas/github.py` - GitHub API repository fetching
 - `saas/clone.py` - Local cloning logic
 - `saas/templates/` - HTML templates
-- `saas/static/style.css` - Dashboard styling
+- `saas/static/css/` - Modular stylesheets (see `base.html` for the loaded set)
 
 ### Current SaaS Routes
 
@@ -266,32 +269,15 @@ This approach keeps the project practical, transparent, and easier to reason abo
 
 ## Docker Setup (Recommended)
 
-### Quick Start with Docker
-
-The easiest way to run GVD is with Docker and Docker Compose:
+The easiest way to run GVD is with Docker Compose:
 
 ```bash
-# 1. Clone the project
-git clone <repository-url>
-cd gvd
-
-# 2. Create environment file
-cp saas/.env.example saas/.env
-# Edit saas/.env with your GitHub OAuth credentials
-
-# 3. Run with Docker Compose
-docker-compose up --build
-
-# Access the app at http://localhost:5000
+cp .env.example .env     # fill in GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, FLASK_SECRET_KEY, OAUTH_REDIRECT_URI
+docker compose up --build
+# open http://localhost:5000
 ```
 
-### Docker Services
-
-- **gvd-saas**: Flask web application (port 5000)
-- **gvd-cli**: CLI scanner service
-- **nginx**: Optional reverse proxy for production
-
-For detailed Docker instructions, see [DOCKER_SETUP.md](DOCKER_SETUP.md).
+For the complete Docker and deployment reference, see **[docs/guides/docker.md](docs/guides/docker.md)**.
 
 ---
 
@@ -485,6 +471,18 @@ Potential product directions:
 - Team accounts and shared views
 - Pull request or remediation workflows
 - Notifications by email or chat
+
+## Documentation
+
+The full documentation catalog lives in **[`docs/`](docs/README.md)**:
+
+- [Architecture overview](docs/architecture/overview.md)
+- [Docker guide](docs/guides/docker.md)
+- [Deployment guide](docs/guides/deployment.md)
+- [Bulk scan guide](docs/guides/bulk-scan.md)
+- [Quick reference & API](docs/guides/quick-reference.md)
+
+---
 
 ## Contributing
 

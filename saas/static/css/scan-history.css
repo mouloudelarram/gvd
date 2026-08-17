@@ -13,6 +13,7 @@
   justify-content: space-between;
   margin-bottom: var(--space-8);
   gap: var(--space-6);
+  margin: 20px;
 }
 
 .page-header-content h1 {

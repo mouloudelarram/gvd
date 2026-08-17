@@ -297,7 +297,7 @@ html, body {
 
 .auth-footer p {
   font-size: 0.8rem;
-  color: #738496;
+  color: var(--color-text-secondary); /* #4b5563 — 7.49:1 on white, WCAG 2.2 AA */
   margin: 0 0 10px;
   line-height: 1.4;
 }
@@ -316,7 +316,7 @@ html, body {
 
 .footer-security {
   font-size: 0.8rem;
-  color: #738496;
+  color: var(--color-text-secondary); /* #4b5563 — 7.49:1 on white, WCAG 2.2 AA */
   display: flex;
   align-items: center;
   justify-content: center;

@@ -1,0 +1,36 @@
+# Shared Ruff configuration for the GVD repository.
+# Ruff is used as the linter (and import sorter) across both the SaaS service and the CLI.
+
+target-version = "py310"
+line-length = 100
+
+extend-exclude = [
+    ".venv",
+    "**/__pycache__",
+    "saas/repos",
+    "saas/scan_reports",
+    "cli/dist",
+]
+
+[lint]
+# Start conservative: rules that flag real bugs (syntax errors, undefined names,
+# unused imports). This keeps the gate meaningful and passable on the existing
+# codebase. Broader style/security rules are staged for incremental adoption
+# (see the commented set below) as each module is cleaned.
+select = [
+    "E9",  # syntax errors
+    "F",   # pyflakes: undefined names, unused imports, etc.
+]
+# Planned next waves (enable per-directory once clean):
+#   "I"  (import order), "B" (bugbear), "UP" (pyupgrade), "S" (bandit security)
+ignore = []
+
+[lint.per-file-ignores]
+# Tests may use asserts and short-lived subprocess calls.
+"**/test_*.py" = ["S101", "S603", "S607"]
+# The CLI and clone modules legitimately invoke git via subprocess with fixed argv.
+"cli/**" = ["S603", "S607"]
+"saas/clone.py" = ["S603", "S607"]
+"saas/app.py" = ["S603", "S607"]
+
+
